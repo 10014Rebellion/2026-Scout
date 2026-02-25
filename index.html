@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FRC 2026 Scout</title>
+<link rel="manifest" href="manifest.json">
+
+<style>
+:root {
+  --bg:#0f172a;
+  --card:#1e293b;
+  --text:#f1f5f9;
+  --accent:#38bdf8;
+  --green:#22c55e;
+  --red:#ef4444;
+  --border:#334155;
+}
+
+body {
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui, -apple-system, sans-serif;
+  padding:1rem;
+  margin:0;
+}
+
+h2,h3 { text-align:center; }
+
+.section {
+  background:var(--card);
+  padding:1rem;
+  margin-bottom:1rem;
+  border-radius:12px;
+  border:1px solid var(--border);
+}
+
+label { font-weight:600; display:block; margin-bottom:0.3rem; }
+
+input, select, textarea {
+  width:100%;
+  padding:0.6rem;
+  background:#0f172a;
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:8px;
+  margin-bottom:0.5rem;
+}
+
+textarea { min-height:70px; }
+
+.counter {
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+  margin-bottom:0.5rem;
+}
+
+.counter button {
+  flex:0 0 50px;
+  height:45px;
+  border:none;
+  border-radius:10px;
+  font-size:1.4rem;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.btn-inc { background:var(--green); color:black; }
+.btn-dec { background:var(--red); color:black; }
+
+.counter input {
+  width:60px;
+  text-align:center;
+  font-size:1.2rem;
+}
+
+.primary-btn {
+  width:100%;
+  padding:1rem;
+  font-size:1rem;
+  border:none;
+  border-radius:12px;
+  margin-top:0.8rem;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.save-btn { background:var(--accent); color:black; }
+.export-btn { background:var(--green); color:black; }
+.reset-btn { background:var(--red); color:black; }
+</style>
+</head>
+<body>
+
+<h2>FRC 2026 – Cycle Scouting</h2>
+
+<div class="section">
+<label>Qualification Match #</label>
+<input id="match">
+
+<label>Team #</label>
+<input id="team">
+
+<label>Alliance</label>
+<select id="alliance">
+<option>Red</option>
+<option>Blue</option>
+</select>
+
+<label>Robot Role</label>
+<select id="role">
+<option>Shooter</option>
+<option>Feeder</option>
+<option>Defender</option>
+<option>Balanced</option>
+<option>Support</option>
+</select>
+</div>
+
+<div class="section">
+<h3>AUTONOMOUS</h3>
+
+<label>Auto Cycles</label>
+<div class="counter">
+<button class="btn-dec" onclick="change('autoCycles',-1)">−</button>
+<input id="autoCycles" type="number" value="0">
+<button class="btn-inc" onclick="change('autoCycles',1)">+</button>
+</div>
+
+<label>Auto Bad Cycles</label>
+<div class="counter">
+<button class="btn-dec" onclick="change('autoBad',-1)">−</button>
+<input id="autoBad" type="number" value="0">
+<button class="btn-inc" onclick="change('autoBad',1)">+</button>
+</div>
+
+<label>Auto Climb</label>
+<select id="autoClimb">
+<option value="0">None</option>
+<option value="1">Level 1</option>
+</select>
+</div>
+
+<div class="section">
+<h3>TELEOP</h3>
+
+<label>Teleop Cycles</label>
+<div class="counter">
+<button class="btn-dec" onclick="change('teleCycles',-1)">−</button>
+<input id="teleCycles" type="number" value="0">
+<button class="btn-inc" onclick="change('teleCycles',1)">+</button>
+</div>
+
+<label>Teleop Bad Cycles</label>
+<div class="counter">
+<button class="btn-dec" onclick="change('teleBad',-1)">−</button>
+<input id="teleBad" type="number" value="0">
+<button class="btn-inc" onclick="change('teleBad',1)">+</button>
+</div>
+
+<label>Teleop Climb Level</label>
+<select id="teleClimb">
+<option value="0">None</option>
+<option value="1">Level 1</option>
+<option value="2">Level 2</option>
+<option value="3">Level 3</option>
+</select>
+
+<label>Climb Time Required (seconds)</label>
+<input id="climbTime" type="number" min="0" placeholder="e.g. 12">
+</div>
+
+<div class="section">
+<h3>Defense & Discipline</h3>
+
+<label>Defense Effectiveness</label>
+<select id="defense">
+<option>None</option>
+<option>Light</option>
+<option>Moderate</option>
+<option>Strong</option>
+<option>Lockdown</option>
+</select>
+
+<label>Penalties Observed</label>
+<textarea id="penalties"></textarea>
+</div>
+
+<div class="section">
+<h3>Overall Robot Notes</h3>
+<textarea id="notes"></textarea>
+</div>
+
+<button class="primary-btn save-btn" onclick="saveEntry()">Save Entry</button>
+<button class="primary-btn export-btn" onclick="exportCSV()">Export CSV</button>
+<button class="primary-btn reset-btn" onclick="resetAll()">Reset All Data</button>
+
+<script>
+let entries = JSON.parse(localStorage.getItem("frcData") || "[]");
+
+function change(id, delta){
+  let el = document.getElementById(id);
+  let val = parseInt(el.value) || 0;
+  val += delta;
+  if(val < 0) val = 0;
+  el.value = val;
+}
+
+function saveEntry(){
+  let entry = {
+    match:match.value,
+    team:team.value,
+    alliance:alliance.value,
+    role:role.value,
+    autoCycles:autoCycles.value,
+    autoBad:autoBad.value,
+    autoClimb:autoClimb.value,
+    teleCycles:teleCycles.value,
+    teleBad:teleBad.value,
+    teleClimb:teleClimb.value,
+    climbTime:climbTime.value,
+    defense:defense.value,
+    penalties:penalties.value,
+    notes:notes.value
+  };
+  entries.push(entry);
+  localStorage.setItem("frcData", JSON.stringify(entries));
+  alert("Saved Offline ✅");
+}
+
+function exportCSV(){
+  if(entries.length === 0){
+    alert("No data saved.");
+    return;
+  }
+
+  let csv = "match,team,alliance,role,autoCycles,autoBad,autoClimb,teleCycles,teleBad,teleClimb,climbTime,defense,penalties,notes\n";
+
+  entries.forEach(r=>{
+    const esc = s => `"${(s||"").replace(/"/g,'""')}"`;
+    csv += `${r.match},${r.team},${r.alliance},${r.role},${r.autoCycles},${r.autoBad},${r.autoClimb},${r.teleCycles},${r.teleBad},${r.teleClimb},${r.climbTime},${r.defense},${esc(r.penalties)},${esc(r.notes)}\n`;
+  });
+
+  const blob = new Blob([csv], {type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "frc2026_scouting.csv";
+  a.click();
+}
+
+function resetAll(){
+  if(confirm("Are you sure you want to delete ALL saved scouting data?")){
+    localStorage.removeItem("frcData");
+    entries = [];
+    alert("All data cleared!");
+  }
+}
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+
+</body>
+</html>
