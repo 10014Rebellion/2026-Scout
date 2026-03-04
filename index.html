@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FRC 2026 Scout</title>
-<link rel="manifest" href="manifest.json">
+<title>10014 Rebel Scout</title>
 
 <style>
 :root {
@@ -14,13 +13,14 @@
   --accent:#38bdf8;
   --green:#22c55e;
   --red:#ef4444;
+  --yellow:#facc15;
   --border:#334155;
 }
 
 body {
   background:var(--bg);
   color:var(--text);
-  font-family:system-ui, -apple-system, sans-serif;
+  font-family:system-ui;
   padding:1rem;
   margin:0;
 }
@@ -31,11 +31,12 @@ h2,h3 { text-align:center; }
   background:var(--card);
   padding:1rem;
   margin-bottom:1rem;
-  border-radius:12px;
+  border-radius:14px;
   border:1px solid var(--border);
+  box-shadow:0 4px 12px rgba(0,0,0,0.3);
 }
 
-label { font-weight:600; display:block; margin-bottom:0.3rem; }
+label { font-weight:600; display:block; margin-top:0.7rem; }
 
 input, select, textarea {
   width:100%;
@@ -44,41 +45,14 @@ input, select, textarea {
   color:var(--text);
   border:1px solid var(--border);
   border-radius:8px;
-  margin-bottom:0.5rem;
+  margin-top:0.3rem;
 }
 
 textarea { min-height:70px; }
 
-.counter {
-  display:flex;
-  align-items:center;
-  gap:0.5rem;
-  margin-bottom:0.5rem;
-}
-
-.counter button {
-  flex:0 0 50px;
-  height:45px;
-  border:none;
-  border-radius:10px;
-  font-size:1.4rem;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-.btn-inc { background:var(--green); color:black; }
-.btn-dec { background:var(--red); color:black; }
-
-.counter input {
-  width:60px;
-  text-align:center;
-  font-size:1.2rem;
-}
-
 .primary-btn {
   width:100%;
   padding:1rem;
-  font-size:1rem;
   border:none;
   border-radius:12px;
   margin-top:0.8rem;
@@ -86,101 +60,102 @@ textarea { min-height:70px; }
   font-weight:bold;
 }
 
-.save-btn { background:var(--accent); color:black; }
-.export-btn { background:var(--green); color:black; }
+.save-btn { background:var(--green); color:black; }
+.export-btn { background:var(--accent); color:black; }
 .reset-btn { background:var(--red); color:black; }
+
+img.preview {
+  width:100%;
+  margin-top:10px;
+  border-radius:10px;
+  border:1px solid var(--border);
+}
+
 </style>
 </head>
 <body>
 
-<h2>FRC 2026 – Cycle Scouting</h2>
+<h2>FRC 2026 – Pit Scouting</h2>
 
 <div class="section">
-<label>Qualification Match #</label>
-<input id="match">
+<h3>General Robot Info</h3>
 
 <label>Team #</label>
-<input id="team">
+<input id="pitTeam">
 
-<label>Alliance</label>
-<select id="alliance">
-<option>Red</option>
-<option>Blue</option>
+<label>Robot Weight (lbs)</label>
+<input id="robotWeight" type="number">
+
+<label>Drivetrain Type</label>
+<select id="drivetrain">
+<option>Swerve</option>
+<option>Tank</option>
+<option>X-Drive</option>
+<option>Mecanum</option>
+<option>Other</option>
 </select>
 
-<label>Robot Role</label>
-<select id="role">
-<option>Shooter</option>
-<option>Feeder</option>
-<option>Defender</option>
-<option>Balanced</option>
-<option>Support</option>
+<label>Estimated Drivetrain Speed</label>
+<select id="driveSpeed">
+<option>Slow</option>
+<option>Medium</option>
+<option>Fast</option>
 </select>
-</div>
 
-<div class="section">
-<h3>AUTONOMOUS</h3>
+<label>Vision System</label>
+<select id="vision">
+<option>Limelight</option>
+<option>PhotonVision</option>
+<option>None</option>
+<option>Other</option>
+</select>
 
-<label>Auto Cycles</label>
-<div class="counter">
-<button class="btn-dec" onclick="change('autoCycles',-1)">−</button>
-<input id="autoCycles" type="number" value="0">
-<button class="btn-inc" onclick="change('autoCycles',1)">+</button>
-</div>
-
-<label>Auto Average Cycle Time (seconds)</label>
-<input id="autoCycleTime" type="number" min="0" step="0.1" placeholder="e.g. 3.5">
-
-<label>Auto Bad Cycles</label>
-<div class="counter">
-<button class="btn-dec" onclick="change('autoBad',-1)">−</button>
-<input id="autoBad" type="number" value="0">
-<button class="btn-inc" onclick="change('autoBad',1)">+</button>
-</div>
-
-<label>Auto Climb</label>
-<select id="autoClimb">
-<option value="0">None</option>
-<option value="1">Level 1</option>
-<option value="F">Failed</option>
+<label>Practice Field Access?</label>
+<select id="practiceField">
+<option>Yes</option>
+<option>No</option>
 </select>
 
 </div>
 
 <div class="section">
-<h3>TELEOP</h3>
+<h3>Driver & Autonomous</h3>
 
-<label>Teleop Cycles</label>
-<div class="counter">
-<button class="btn-dec" onclick="change('teleCycles',-1)">−</button>
-<input id="teleCycles" type="number" value="0">
-<button class="btn-inc" onclick="change('teleCycles',1)">+</button>
-</div>
-
-<label>Teleop Average Cycle Time (seconds)</label>
-<input id="teleCycleTime" type="number" min="0" step="0.1" placeholder="e.g. 6.2">
-  
-<label>Teleop Bad Cycles</label>
-<div class="counter">
-<button class="btn-dec" onclick="change('teleBad',-1)">−</button>
-<input id="teleBad" type="number" value="0">
-<button class="btn-inc" onclick="change('teleBad',1)">+</button>
-</div>
-
-<label>Teleop Climb Level</label>
-<select id="teleClimb">
-<option value="0">None</option>
-<option value="1">Level 1</option>
-<option value="2">Level 2</option>
-<option value="3">Level 3</option>
-<option value="F">Failed</option>
+<label>Driver Experience (1–4)</label>
+<select id="driverRating">
+<option value="1">1 - Rookie</option>
+<option value="2">2 - 1 Year</option>
+<option value="3">3 - 2 Years</option>
+<option value="4">4 - 3+ Years</option>
 </select>
 
+<label># of Auto Routines</label>
+<input id="autoRoutines" type="number">
 
+<label>Claimed Auto Cycle Count</label>
+<input id="pitAutoCycles" type="number">
 
-<label>Climb Time Required (seconds)</label>
-<input id="climbTime" type="number" min="0" placeholder="e.g. 12">
+<label>Auton Climb Area</label>
+<select id="autoClimbArea">
+<option>Left</option>
+<option>Middle</option>
+<option>Right</option>
+</select>
+
+<label>Preferred Auton Side</label>
+<select id="preferredSide">
+<option>Left</option>
+<option>Center</option>
+<option>Right</option>
+</select>
+
 </div>
+
+<div class="section">
+<h3>Game Piece Handling</h3>
+
+<label>Max Fuel / Game Piece Capacity</label>
+<input id="fuelCapacity" type="number">
 
 <label>Intake Speed</label>
 <select id="intakeSpeed">
@@ -189,159 +164,109 @@ textarea { min-height:70px; }
 <option>Slow</option>
 </select>
 
-  
-<div class="section">
-<h3>Defense & Discipline</h3>
-
-<label>Defense Effectiveness</label>
-<select id="defense">
-<option>None</option>
-<option>Light</option>
-<option>Moderate</option>
-<option>Strong</option>
-<option>Lockdown</option>
+<label>Floor Intake?</label>
+<select id="floorIntake">
+<option>Yes</option>
+<option>No</option>
 </select>
 
-<label>Penalties Observed</label>
-<textarea id="penalties"></textarea>
-</div>
-
-<div class="section">
-<h3>Match Result</h3>
-
-<label>Result</label>
-<select id="result">
-<option>Win</option>
-<option>Loss</option>
-<option>Tie</option>
+<label>Station Intake?</label>
+<select id="stationIntake">
+<option>Yes</option>
+<option>No</option>
 </select>
 
-<label>Ranking Points Earned</label>
-<input id="rankingPoints" type="number" min="0" max="4">
+<label>Climb Consistency (%)</label>
+<input id="climbConsistency" type="number" min="0" max="100">
+
 </div>
 
 <div class="section">
-<h3>Bad Stuff</h3>
+<h3>Robot Photo</h3>
 
-<label><input type="checkbox" id="penaltyPotential"> High Penalty Potential</label><br>
-<label><input type="checkbox" id="brokeDown"> Broke Down</label><br>
-<label><input type="checkbox" id="tippedOver"> Tipped Over</label><br>
-<label><input type="checkbox" id="disabled"> Disabled</label>
-
+<input type="file" accept="image/*" id="robotPhoto" onchange="previewPhoto(event)">
+<img id="photoPreview" class="preview" style="display:none;">
 </div>
 
-  
 <div class="section">
-<h3>Overall Robot Notes</h3>
-<textarea id="notes"></textarea>
+<h3>Pit Notes</h3>
+<textarea id="pitNotes"></textarea>
 </div>
 
-<button class="primary-btn save-btn" onclick="saveEntry()">Save Entry</button>
-<button class="primary-btn export-btn" onclick="exportCSV()">Export CSV</button>
+<button class="primary-btn save-btn" onclick="savePit()">Save Pit Entry</button>
+<button class="primary-btn export-btn" onclick="exportPit()">Export Pit CSV</button>
 <button class="primary-btn reset-btn" onclick="resetAll()">Reset All Data</button>
 
 <script>
-let entries = JSON.parse(localStorage.getItem("frcData") || "[]");
+let pitEntries = JSON.parse(localStorage.getItem("pitData") || "[]");
+let currentPhotoBase64 = "";
 
-function sendToMaster(entry){
-  fetch("https://script.google.com/macros/s/AKfycbwxDj7m06L2os1JkP_zk8FVlTzpb1-comZbb28CN8yul5PfS0BFATL3ZadfdtGviA9OkA/exec", {
-    method: "POST",
-    body: JSON.stringify(entry)
-  })
-  .then(res => res.text())
-  .then(data => console.log("Sent to master:", data))
-  .catch(err => console.error(err));
+function previewPhoto(event){
+  const reader = new FileReader();
+  reader.onload = function(){
+    currentPhotoBase64 = reader.result;
+    const img = document.getElementById("photoPreview");
+    img.src = currentPhotoBase64;
+    img.style.display = "block";
+  };
+  reader.readAsDataURL(event.target.files[0]);
 }
 
-  
-function change(id, delta){
-  let el = document.getElementById(id);
-  let val = parseInt(el.value) || 0;
-  val += delta;
-  if(val < 0) val = 0;
-  el.value = val;
+function savePit(){
+  let entry = {
+    team:pitTeam.value,
+    weight:robotWeight.value,
+    drivetrain:drivetrain.value,
+    driveSpeed:driveSpeed.value,
+    vision:vision.value,
+    practiceField:practiceField.value,
+    driverRating:driverRating.value,
+    autoRoutines:autoRoutines.value,
+    pitAutoCycles:pitAutoCycles.value,
+    autoClimbArea:autoClimbArea.value,
+    preferredSide:preferredSide.value,
+    fuelCapacity:fuelCapacity.value,
+    intakeSpeed:intakeSpeed.value,
+    floorIntake:floorIntake.value,
+    stationIntake:stationIntake.value,
+    climbConsistency:climbConsistency.value,
+    notes:pitNotes.value,
+    photo:currentPhotoBase64
+  };
+
+  pitEntries.push(entry);
+  localStorage.setItem("pitData", JSON.stringify(pitEntries));
+  alert("Pit Entry Saved ✅");
 }
 
-function saveEntry(){
-let entry = {
-  match:match.value,
-  team:team.value,
-  alliance:alliance.value,
-  role:role.value,
+function exportPit(){
+  let csv = "team,weight,drivetrain,driveSpeed,vision,practiceField,driverRating,autoRoutines,pitAutoCycles,autoClimbArea,preferredSide,fuelCapacity,intakeSpeed,floorIntake,stationIntake,climbConsistency,notes,photo\n";
 
-  autoCycles:autoCycles.value,
-  autoBad:autoBad.value,
-  autoClimb:autoClimb.value,
-  autoCycleTime:autoCycleTime.value,
-
-  teleCycles:teleCycles.value,
-  teleBad:teleBad.value,
-  teleClimb:teleClimb.value,
-  teleCycleTime:teleCycleTime.value,
-
-  climbTime:climbTime.value,
-  intakeSpeed:intakeSpeed.value,
-
-  result:result.value,
-  rankingPoints:rankingPoints.value,
-
-  defense:defense.value,
-  penalties:penalties.value,
-
-  penaltyPotential:penaltyPotential.checked,
-  brokeDown:brokeDown.checked,
-  tippedOver:tippedOver.checked,
-  disabled:disabled.checked,
-
-  notes:notes.value
-};
-
-  entries.push(entry);
-  sendToMaster(entry);
-  localStorage.setItem("frcData", JSON.stringify(entries));
-  alert("Saved Offline ✅");
-}
-
-function exportCSV(){
-  if(entries.length === 0){
-    alert("No data saved.");
-    return;
-  }
-
-  let csv = "match,team,alliance,role,autoCycles,autoBad,autoClimb,autoCycleTime,teleCycles,teleBad,teleClimb,teleCycleTime,climbTime,intakeSpeed,result,rankingPoints,defense,penaltyPotential,brokeDown,tippedOver,disabled,penalties,notes\n";
-
-
-  entries.forEach(r=>{
+  pitEntries.forEach(r=>{
     const esc = s => `"${(s||"").replace(/"/g,'""')}"`;
-  csv += `${r.match},${r.team},${r.alliance},${r.role},${r.autoCycles},${r.autoBad},${r.autoClimb},${r.autoCycleTime},${r.teleCycles},${r.teleBad},${r.teleClimb},${r.teleCycleTime},${r.climbTime},${r.intakeSpeed},${r.result},${r.rankingPoints},${r.defense},${r.penaltyPotential},${r.brokeDown},${r.tippedOver},${r.disabled},${esc(r.penalties)},${esc(r.notes)}\n`;
+    csv += `${r.team},${r.weight},${r.drivetrain},${r.driveSpeed},${r.vision},${r.practiceField},${r.driverRating},${r.autoRoutines},${r.pitAutoCycles},${r.autoClimbArea},${r.preferredSide},${r.fuelCapacity},${r.intakeSpeed},${r.floorIntake},${r.stationIntake},${r.climbConsistency},${esc(r.notes)},${esc(r.photo)}\n`;
   });
 
+  downloadCSV(csv,"pit_scouting.csv");
+}
+
+function downloadCSV(csv,name){
   const blob = new Blob([csv], {type:"text/csv"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "frc2026_scouting.csv";
+  a.download = name;
   a.click();
 }
 
-
-  
 function resetAll(){
-  if(confirm("Are you sure you want to delete ALL saved scouting data?")){
-    localStorage.removeItem("frcData");
-    entries = [];
-    alert("All data cleared!");
+  if(confirm("Delete ALL pit data?")){
+    localStorage.removeItem("pitData");
+    pitEntries = [];
+    alert("All pit data cleared.");
   }
-}
-</script>
-
-<script>
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js');
 }
 </script>
 
 </body>
 </html>
-
-
