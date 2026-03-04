@@ -128,6 +128,9 @@ textarea { min-height:70px; }
 <button class="btn-inc" onclick="change('autoCycles',1)">+</button>
 </div>
 
+<label>Auto Average Cycle Time (seconds)</label>
+<input id="autoCycleTime" type="number" min="0" step="0.1" placeholder="e.g. 3.5">
+
 <label>Auto Bad Cycles</label>
 <div class="counter">
 <button class="btn-dec" onclick="change('autoBad',-1)">−</button>
@@ -139,7 +142,9 @@ textarea { min-height:70px; }
 <select id="autoClimb">
 <option value="0">None</option>
 <option value="1">Level 1</option>
+<option value="F">Failed</option>
 </select>
+
 </div>
 
 <div class="section">
@@ -152,6 +157,9 @@ textarea { min-height:70px; }
 <button class="btn-inc" onclick="change('teleCycles',1)">+</button>
 </div>
 
+<label>Teleop Average Cycle Time (seconds)</label>
+<input id="teleCycleTime" type="number" min="0" step="0.1" placeholder="e.g. 6.2">
+  
 <label>Teleop Bad Cycles</label>
 <div class="counter">
 <button class="btn-dec" onclick="change('teleBad',-1)">−</button>
@@ -165,12 +173,23 @@ textarea { min-height:70px; }
 <option value="1">Level 1</option>
 <option value="2">Level 2</option>
 <option value="3">Level 3</option>
+<option value="F">Failed</option>
 </select>
+
+
 
 <label>Climb Time Required (seconds)</label>
 <input id="climbTime" type="number" min="0" placeholder="e.g. 12">
 </div>
 
+<label>Intake Speed</label>
+<select id="intakeSpeed">
+<option>Fast</option>
+<option>Medium</option>
+<option>Slow</option>
+</select>
+
+  
 <div class="section">
 <h3>Defense & Discipline</h3>
 
@@ -187,6 +206,31 @@ textarea { min-height:70px; }
 <textarea id="penalties"></textarea>
 </div>
 
+<div class="section">
+<h3>Match Result</h3>
+
+<label>Result</label>
+<select id="result">
+<option>Win</option>
+<option>Loss</option>
+<option>Tie</option>
+</select>
+
+<label>Ranking Points Earned</label>
+<input id="rankingPoints" type="number" min="0" max="4">
+</div>
+
+<div class="section">
+<h3>Bad Stuff</h3>
+
+<label><input type="checkbox" id="penaltyPotential"> High Penalty Potential</label><br>
+<label><input type="checkbox" id="brokeDown"> Broke Down</label><br>
+<label><input type="checkbox" id="tippedOver"> Tipped Over</label><br>
+<label><input type="checkbox" id="disabled"> Disabled</label>
+
+</div>
+
+  
 <div class="section">
 <h3>Overall Robot Notes</h3>
 <textarea id="notes"></textarea>
@@ -208,22 +252,39 @@ function change(id, delta){
 }
 
 function saveEntry(){
-  let entry = {
-    match:match.value,
-    team:team.value,
-    alliance:alliance.value,
-    role:role.value,
-    autoCycles:autoCycles.value,
-    autoBad:autoBad.value,
-    autoClimb:autoClimb.value,
-    teleCycles:teleCycles.value,
-    teleBad:teleBad.value,
-    teleClimb:teleClimb.value,
-    climbTime:climbTime.value,
-    defense:defense.value,
-    penalties:penalties.value,
-    notes:notes.value
-  };
+let entry = {
+  match:match.value,
+  team:team.value,
+  alliance:alliance.value,
+  role:role.value,
+
+  autoCycles:autoCycles.value,
+  autoBad:autoBad.value,
+  autoClimb:autoClimb.value,
+  autoCycleTime:autoCycleTime.value,
+
+  teleCycles:teleCycles.value,
+  teleBad:teleBad.value,
+  teleClimb:teleClimb.value,
+  teleCycleTime:teleCycleTime.value,
+
+  climbTime:climbTime.value,
+  intakeSpeed:intakeSpeed.value,
+
+  result:result.value,
+  rankingPoints:rankingPoints.value,
+
+  defense:defense.value,
+  penalties:penalties.value,
+
+  penaltyPotential:penaltyPotential.checked,
+  brokeDown:brokeDown.checked,
+  tippedOver:tippedOver.checked,
+  disabled:disabled.checked,
+
+  notes:notes.value
+};
+
   entries.push(entry);
   localStorage.setItem("frcData", JSON.stringify(entries));
   alert("Saved Offline ✅");
@@ -235,11 +296,12 @@ function exportCSV(){
     return;
   }
 
-  let csv = "match,team,alliance,role,autoCycles,autoBad,autoClimb,teleCycles,teleBad,teleClimb,climbTime,defense,penalties,notes\n";
+  let csv = "match,team,alliance,role,autoCycles,autoBad,autoClimb,autoCycleTime,teleCycles,teleBad,teleClimb,teleCycleTime,climbTime,intakeSpeed,result,rankingPoints,defense,penaltyPotential,brokeDown,tippedOver,disabled,penalties,notes\n";
+
 
   entries.forEach(r=>{
     const esc = s => `"${(s||"").replace(/"/g,'""')}"`;
-    csv += `${r.match},${r.team},${r.alliance},${r.role},${r.autoCycles},${r.autoBad},${r.autoClimb},${r.teleCycles},${r.teleBad},${r.teleClimb},${r.climbTime},${r.defense},${esc(r.penalties)},${esc(r.notes)}\n`;
+  csv += `${r.match},${r.team},${r.alliance},${r.role},${r.autoCycles},${r.autoBad},${r.autoClimb},${r.autoCycleTime},${r.teleCycles},${r.teleBad},${r.teleClimb},${r.teleCycleTime},${r.climbTime},${r.intakeSpeed},${r.result},${r.rankingPoints},${r.defense},${r.penaltyPotential},${r.brokeDown},${r.tippedOver},${r.disabled},${esc(r.penalties)},${esc(r.notes)}\n`;
   });
 
   const blob = new Blob([csv], {type:"text/csv"});
@@ -267,3 +329,4 @@ if('serviceWorker' in navigator){
 
 </body>
 </html>
+
