@@ -4,11 +4,473 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <title>Document</title>
+    <title>FRC 2026 – Scouting App</title>
 </head>
-<body><!-- Existing content goes here -->
+<body>
 
-<!-- Existing JavaScript content -->
+<h2>FRC 2026 – Scouting App</h2>
+
+<button onclick="toggleMode()" style="width:100%;padding:0.8rem;margin-bottom:1rem;border:none;border-radius:12px;background:#facc15;font-weight:bold;cursor:pointer;">
+Switch to Pit Scouting
+</button>
+
+<div id="matchScouting">
+
+<h2>FRC 2026 – Cycle Scouting</h2>
+
+<div class="section">
+<label>Qualification Match #</label>
+<input id="match">
+
+<label>Team #</label>
+<input id="team">
+
+<label>Alliance</label>
+<select id="alliance">
+<option>Red</option>
+<option>Blue</option>
+</select>
+
+<label>Robot Role</label>
+<select id="role">
+<option>Shooter</option>
+<option>Feeder</option>
+<option>Defender</option>
+<option>Balanced</option>
+<option>Support</option>
+</select>
+</div>
+
+<div class="section">
+<h3>AUTONOMOUS</h3>
+
+<label>Auto Cycles</label>
+<div class="counter">
+<button class="btn-dec" onclick="change('autoCycles',-1)">−</button>
+<input id="autoCycles" type="number" value="0">
+<button class="btn-inc" onclick="change('autoCycles',1)">+</button>
+</div>
+
+<label>Auto Average Cycle Time (seconds)</label>
+<input id="autoCycleTime" type="number" min="0" step="0.1" placeholder="e.g. 3.5">
+
+<label>Auto Bad Cycles</label>
+<div class="counter">
+<button class="btn-dec" onclick="change('autoBad',-1)">−</button>
+<input id="autoBad" type="number" value="0">
+<button class="btn-inc" onclick="change('autoBad',1)">+</button>
+</div>
+
+<label>Auto Climb</label>
+<select id="autoClimb">
+<option value="0">None</option>
+<option value="1">Level 1</option>
+<option value="F">Failed</option>
+</select>
+
+</div>
+
+<div class="section">
+<h3>TELEOP</h3>
+
+<label>Teleop Cycles</label>
+<div class="counter">
+<button class="btn-dec" onclick="change('teleCycles',-1)">−</button>
+<input id="teleCycles" type="number" value="0">
+<button class="btn-inc" onclick="change('teleCycles',1)">+</button>
+</div>
+
+<label>Teleop Average Cycle Time (seconds)</label>
+<input id="teleCycleTime" type="number" min="0" step="0.1" placeholder="e.g. 6.2">
+  
+<label>Teleop Bad Cycles</label>
+<div class="counter">
+<button class="btn-dec" onclick="change('teleBad',-1)">−</button>
+<input id="teleBad" type="number" value="0">
+<button class="btn-inc" onclick="change('teleBad',1)">+</button>
+</div>
+
+<label>Teleop Climb Level</label>
+<select id="teleClimb">
+<option value="0">None</option>
+<option value="1">Level 1</option>
+<option value="2">Level 2</option>
+<option value="3">Level 3</option>
+<option value="F">Failed</option>
+</select>
+
+<label>Climb Time Required (seconds)</label>
+<input id="climbTime" type="number" min="0" placeholder="e.g. 12">
+</div>
+
+<label>Intake Speed</label>
+<select id="intakeSpeed">
+<option>Fast</option>
+<option>Medium</option>
+<option>Slow</option>
+</select>
+
+<div class="section">
+<h3>Defense & Discipline</h3>
+
+<label>Defense Effectiveness</label>
+<select id="defense">
+<option>None</option>
+<option>Light</option>
+<option>Moderate</option>
+<option>Strong</option>
+<option>Lockdown</option>
+</select>
+
+<label>Penalties Observed</label>
+<textarea id="penalties"></textarea>
+</div>
+
+<div class="section">
+<h3>Match Result</h3>
+
+<label>Result</label>
+<select id="result">
+<option>Win</option>
+<option>Loss</option>
+<option>Tie</option>
+</select>
+
+<label>Ranking Points Earned</label>
+<input id="rankingPoints" type="number" min="0" max="4">
+</div>
+
+<div class="section">
+<h3>Bad Stuff</h3>
+
+<label><input type="checkbox" id="penaltyPotential"> High Penalty Potential</label><br>
+<label><input type="checkbox" id="brokeDown"> Broke Down</label><br>
+<label><input type="checkbox" id="tippedOver"> Tipped Over</label><br>
+<label><input type="checkbox" id="disabled"> Disabled</label>
+
+</div>
+
+<div class="section">
+<h3>Overall Robot Notes</h3>
+<textarea id="notes"></textarea>
+</div>
+
+<button class="primary-btn save-btn" onclick="saveEntry()">Save Entry</button>
+<button class="primary-btn export-btn" onclick="exportCSV()">Export CSV</button>
+<button class="primary-btn reset-btn" onclick="resetAll()">Reset All Data</button>
+
+<script>
+let entries = JSON.parse(localStorage.getItem("frcData") || "[]");
+
+function sendToMaster(entry){
+  entry.mode = "match";
+  fetch("https://script.google.com/macros/s/AKfycbxED_FDYedlQbOI0EUbeI7Jx4Pnna0emgjnIcXMW2ZwZCJ-g0BgwhYCo3-bStwXoobxsQ/exec", {
+    method: "POST",
+    body: JSON.stringify(entry)
+  })
+  .then(res => res.text())
+  .then(data => console.log("Sent to master:", data))
+  .catch(err => console.error(err));
+}
+
+function change(id, delta){
+  let el = document.getElementById(id);
+  let val = parseInt(el.value) || 0;
+  val += delta;
+  if(val < 0) val = 0;
+  el.value = val;
+}
+
+function saveEntry(){
+let entry = {
+  match:match.value,
+  team:team.value,
+  alliance:alliance.value,
+  role:role.value,
+  autoCycles:autoCycles.value,
+  autoBad:autoBad.value,
+  autoClimb:autoClimb.value,
+  autoCycleTime:autoCycleTime.value,
+  teleCycles:teleCycles.value,
+  teleBad:teleBad.value,
+  teleClimb:teleClimb.value,
+  teleCycleTime:teleCycleTime.value,
+  climbTime:climbTime.value,
+  intakeSpeed:intakeSpeed.value,
+  result:result.value,
+  rankingPoints:rankingPoints.value,
+  defense:defense.value,
+  penalties:penalties.value,
+  penaltyPotential:penaltyPotential.checked,
+  brokeDown:brokeDown.checked,
+  tippedOver:tippedOver.checked,
+  disabled:disabled.checked,
+  notes:notes.value
+};
+  entries.push(entry);
+  sendToMaster(entry);
+  localStorage.setItem("frcData", JSON.stringify(entries));
+  alert("Saved Offline ✅");
+}
+
+function exportCSV(){
+  if(entries.length === 0){
+    alert("No data saved.");
+    return;
+  }
+  let csv = "match,team,alliance,role,autoCycles,autoBad,autoClimb,autoCycleTime,teleCycles,teleBad,teleClimb,teleCycleTime,climbTime,intakeSpeed,result,rankingPoints,defense,penaltyPotential,brokeDown,tippedOver,disabled,penalties,notes\n";
+  entries.forEach(r=>{
+    const esc = s => `"${(s||"").replace(/"/g,'""')}"`;
+    csv += `${r.match},${r.team},${r.alliance},${r.role},${r.autoCycles},${r.autoBad},${r.autoClimb},${r.autoCycleTime},${r.teleCycles},${r.teleBad},${r.teleClimb},${r.teleCycleTime},${r.climbTime},${r.intakeSpeed},${r.result},${r.rankingPoints},${r.defense},${r.penaltyPotential},${r.brokeDown},${r.tippedOver},${r.disabled},${esc(r.penalties)},${esc(r.notes)}\n`;
+  });
+  const blob = new Blob([csv], {type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "frc2026_scouting.csv";
+  a.click();
+}
+
+function resetAll(){
+  if(confirm("Are you sure you want to delete ALL saved scouting data?")){
+    localStorage.removeItem("frcData");
+    entries = [];
+    alert("All data cleared!");
+  }
+}
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+
+</div>
+
+<div id="pitScouting" style="display:none;">
+
+<h2>FRC 2026 – Pit Scouting</h2>
+
+<div class="section">
+<h3>General Robot Info</h3>
+
+<label>Team #</label>
+<input id="pitTeam">
+
+<label>Robot Weight (lbs)</label>
+<input id="robotWeight" type="number">
+
+<label>Drivetrain Type</label>
+<select id="drivetrain">
+<option>Swerve</option>
+<option>Tank</option>
+<option>X-Drive</option>
+<option>Mecanum</option>
+<option>Other</option>
+</select>
+
+<label>Estimated Drivetrain Speed</label>
+<select id="driveSpeed">
+<option>Slow</option>
+<option>Medium</option>
+<option>Fast</option>
+</select>
+
+<label>Vision System</label>
+<select id="vision">
+<option>Limelight</option>
+<option>PhotonVision</option>
+<option>None</option>
+<option>Other</option>
+</select>
+
+<label>Practice Field Access?</label>
+<select id="practiceField">
+<option>Yes</option>
+<option>No</option>
+</select>
+
+</div>
+
+<div class="section">
+<h3>Driver & Autonomous</h3>
+
+<label>Driver Experience (1–4)</label>
+<select id="driverRating">
+<option value="1">1 - Rookie</option>
+<option value="2">2 - 1 Year</option>
+<option value="3">3 - 2 Years</option>
+<option value="4">4 - 3+ Years</option>
+</select>
+
+<label># of Auto Routines</label>
+<input id="autoRoutines" type="number">
+
+<label>Claimed Auto Cycle Count</label>
+<input id="pitAutoCycles" type="number">
+
+<label>Auton Climb Area</label>
+<select id="autoClimbArea">
+<option>Left</option>
+<option>Middle</option>
+<option>Right</option>
+</select>
+
+<label>Preferred Auton Side</label>
+<select id="preferredSide">
+<option>Left</option>
+<option>Center</option>
+<option>Right</option>
+</select>
+
+</div>
+
+<div class="section">
+<h3>Game Piece Handling</h3>
+
+<label>Max Fuel / Game Piece Capacity</label>
+<input id="fuelCapacity" type="number">
+
+<label>Intake Speed</label>
+<select id="intakeSpeed">
+<option>Fast</option>
+<option>Medium</option>
+<option>Slow</option>
+</select>
+
+<label>Floor Intake?</label>
+<select id="floorIntake">
+<option>Yes</option>
+<option>No</option>
+</select>
+
+<label>Station Intake?</label>
+<select id="stationIntake">
+<option>Yes</option>
+<option>No</option>
+</select>
+
+<label>Climb Consistency (%)</label>
+<input id="climbConsistency" type="number" min="0" max="100">
+
+</div>
+
+<div class="section">
+<h3>Robot Photo</h3>
+
+<input type="file" accept="image/*" id="robotPhoto" onchange="previewPhoto(event)">
+<img id="photoPreview" class="preview" style="display:none;">
+</div>
+
+<div class="section">
+<h3>Pit Notes</h3>
+<textarea id="pitNotes"></textarea>
+</div>
+
+<button class="primary-btn save-btn" onclick="savePit()">Save Pit Entry</button>
+<button class="primary-btn export-btn" onclick="exportPit()">Export Pit CSV</button>
+<button class="primary-btn reset-btn" onclick="resetAll()">Reset All Data</button>
+
+<script>
+let pitEntries = JSON.parse(localStorage.getItem("pitData") || "[]");
+let currentPhotoBase64 = "";
+
+function previewPhoto(event){
+  const reader = new FileReader();
+  reader.onload = function(){
+    currentPhotoBase64 = reader.result;
+    const img = document.getElementById("photoPreview");
+    img.src = currentPhotoBase64;
+    img.style.display = "block";
+  };
+  reader.readAsDataURL(event.target.files[0]);
+}
+
+function savePit(){
+  let entry = {
+    team:pitTeam.value,
+    weight:robotWeight.value,
+    drivetrain:drivetrain.value,
+    driveSpeed:driveSpeed.value,
+    vision:vision.value,
+    practiceField:practiceField.value,
+    driverRating:driverRating.value,
+    autoRoutines:autoRoutines.value,
+    pitAutoCycles:pitAutoCycles.value,
+    autoClimbArea:autoClimbArea.value,
+    preferredSide:preferredSide.value,
+    fuelCapacity:fuelCapacity.value,
+    intakeSpeed:intakeSpeed.value,
+    floorIntake:floorIntake.value,
+    stationIntake:stationIntake.value,
+    climbConsistency:climbConsistency.value,
+    notes:pitNotes.value,
+    photo:currentPhotoBase64,
+    mode: "pit"
+  };
+  pitEntries.push(entry);
+  localStorage.setItem("pitData", JSON.stringify(pitEntries));
+  fetch("https://script.google.com/macros/s/AKfycbxED_FDYedlQbOI0EUbeI7Jx4Pnna0emgjnIcXMW2ZwZCJ-g0BgwhYCo3-bStwXoobxsQ/exec", {
+    method: "POST",
+    body: JSON.stringify(entry)
+  })
+  .then(res => res.text())
+  .then(data => console.log("Sent Pit to master:", data))
+  .catch(err => console.error(err));
+  alert("Pit Entry Saved ✅");
+}
+
+function exportPit(){
+  let csv = "team,weight,drivetrain,driveSpeed,vision,practiceField,driverRating,autoRoutines,pitAutoCycles,autoClimbArea,preferredSide,fuelCapacity,intakeSpeed,floorIntake,stationIntake,climbConsistency,notes,photo\n";
+  pitEntries.forEach(r=>{
+    const esc = s => `"${(s||"").replace(/"/g,'""')}"`;
+    csv += `${r.team},${r.weight},${r.drivetrain},${r.driveSpeed},${r.vision},${r.practiceField},${r.driverRating},${r.autoRoutines},${r.pitAutoCycles},${r.autoClimbArea},${r.preferredSide},${r.fuelCapacity},${r.intakeSpeed},${r.floorIntake},${r.stationIntake},${r.climbConsistency},${esc(r.notes)},${esc(r.photo)}\n`;
+  });
+  downloadCSV(csv,"pit_scouting.csv");
+}
+
+function downloadCSV(csv,name){
+  const blob = new Blob([csv], {type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+}
+
+function resetAll(){
+  if(confirm("Delete ALL pit data?")){
+    localStorage.removeItem("pitData");
+    pitEntries = [];
+    alert("All pit data cleared.");
+  }
+}
+</script>
+
+</div>
+
+<script>
+let currentMode = "match";
+
+function toggleMode(){
+  const match = document.getElementById("matchScouting");
+  const pit = document.getElementById("pitScouting");
+  const btn = document.querySelector("button");
+
+  if(currentMode === "match"){
+    match.style.display = "none";
+    pit.style.display = "block";
+    btn.innerText = "Switch to Match Scouting";
+    currentMode = "pit";
+  } else {
+    pit.style.display = "none";
+    match.style.display = "block";
+    btn.innerText = "Switch to Pit Scouting";
+    currentMode = "match";
+  }
+}
+</script>
 
 </body>
 </html>
