@@ -157,7 +157,8 @@ Switch to Pit Scouting
 let entries = JSON.parse(localStorage.getItem("frcData") || "[]");
 
 function sendToMaster(entry){
-  fetch("https://script.google.com/macros/s/AKfycbwxDj7m06L2os1JkP_zk8FVlTzpb1-comZbb28CN8yul5PfS0BFATL3ZadfdtGviA9OkA/exec", {
+  entry.mode = "match";  // <--- add this
+  fetch("https://script.google.com/macros/s/AKfycbxED_FDYedlQbOI0EUbeI7Jx4Pnna0emgjnIcXMW2ZwZCJ-g0BgwhYCo3-bStwXoobxsQ/exec", {
     method: "POST",
     body: JSON.stringify(entry)
   })
@@ -165,6 +166,7 @@ function sendToMaster(entry){
   .then(data => console.log("Sent to master:", data))
   .catch(err => console.error(err));
 }
+
 
   
 function change(id, delta){
@@ -474,4 +476,5 @@ function toggleMode(){
   }
 }
 </script>
+
 
