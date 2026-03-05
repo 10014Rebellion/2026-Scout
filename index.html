@@ -1,270 +1,298 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>10014 Rebel Scout</title>
+<title>FRC 2026 Scouting</title>
 
 <style>
-:root {
-  --bg:#0f172a;
-  --card:#1e293b;
-  --text:#f1f5f9;
-  --accent:#38bdf8;
-  --green:#22c55e;
-  --red:#ef4444;
-  --yellow:#facc15;
-  --border:#334155;
+:root{
+--bg:#0f172a;
+--card:#1e293b;
+--text:#f1f5f9;
+--blue:#38bdf8;
+--green:#22c55e;
+--yellow:#facc15;
+--red:#ef4444;
+--border:#334155;
 }
 
-body {
-  background:var(--bg);
-  color:var(--text);
-  font-family:system-ui;
-  padding:1rem;
-  margin:0;
+body{
+background:var(--bg);
+color:var(--text);
+font-family:system-ui;
+margin:0;
+padding:1rem;
 }
 
-h2,h3 { text-align:center; }
+h2,h3{text-align:center;}
 
-.section {
-  background:var(--card);
-  padding:1rem;
-  margin-bottom:1rem;
-  border-radius:14px;
-  border:1px solid var(--border);
-  box-shadow:0 4px 12px rgba(0,0,0,0.3);
+.tabs{
+display:flex;
+gap:10px;
+margin-bottom:1rem;
 }
 
-label { font-weight:600; display:block; margin-top:0.7rem; }
-
-input, select, textarea {
-  width:100%;
-  padding:0.6rem;
-  background:#0f172a;
-  color:var(--text);
-  border:1px solid var(--border);
-  border-radius:8px;
-  margin-top:0.3rem;
+.tabs button{
+flex:1;
+padding:0.8rem;
+border:none;
+border-radius:10px;
+font-weight:bold;
+cursor:pointer;
 }
 
-textarea { min-height:70px; }
+.matchBtn{background:var(--blue);}
+.pitBtn{background:var(--yellow);}
 
-.primary-btn {
-  width:100%;
-  padding:1rem;
-  border:none;
-  border-radius:12px;
-  margin-top:0.8rem;
-  cursor:pointer;
-  font-weight:bold;
+.section{
+background:var(--card);
+padding:1rem;
+margin-bottom:1rem;
+border-radius:14px;
+border:1px solid var(--border);
+box-shadow:0 4px 12px rgba(0,0,0,0.4);
 }
 
-.save-btn { background:var(--green); color:black; }
-.export-btn { background:var(--accent); color:black; }
-.reset-btn { background:var(--red); color:black; }
+label{display:block;margin-top:0.6rem;font-weight:600;}
 
-img.preview {
-  width:100%;
-  margin-top:10px;
-  border-radius:10px;
-  border:1px solid var(--border);
+input,select,textarea{
+width:100%;
+padding:0.6rem;
+margin-top:0.3rem;
+border-radius:8px;
+border:1px solid var(--border);
+background:#0f172a;
+color:white;
 }
 
+textarea{min-height:80px;}
+
+button.primary{
+width:100%;
+padding:1rem;
+border:none;
+border-radius:12px;
+font-weight:bold;
+margin-top:0.8rem;
+cursor:pointer;
+}
+
+.save{background:var(--green);color:black;}
+.export{background:var(--blue);color:black;}
+.reset{background:var(--red);color:black;}
+
+.hidden{display:none;}
+
+img.preview{
+width:100%;
+margin-top:10px;
+border-radius:10px;
+}
 </style>
 </head>
 <body>
 
-<h2>FRC 2026 – Pit Scouting</h2>
+<h2>FRC 2026 Scouting</h2>
+
+<div class="tabs">
+<button class="matchBtn" onclick="showTab('match')">Match Scouting</button>
+<button class="pitBtn" onclick="showTab('pit')">Pit Scouting</button>
+</div>
+
+<!-- ================= MATCH TAB ================= -->
+
+<div id="matchTab">
 
 <div class="section">
-<h3>General Robot Info</h3>
+<h3>Match Info</h3>
+
+<label>Match #</label>
+<input id="match">
+
+<label>Team #</label>
+<input id="team">
+
+<label>Alliance</label>
+<select id="alliance">
+<option>Red</option>
+<option>Blue</option>
+</select>
+
+<label>Auto Cycles</label>
+<input id="autoCycles" type="number" value="0">
+
+<label>Teleop Cycles</label>
+<input id="teleCycles" type="number" value="0">
+
+<label>Climb Level</label>
+<select id="climb">
+<option>None</option>
+<option>Level 1</option>
+<option>Level 2</option>
+<option>Level 3</option>
+<option>Failed</option>
+</select>
+
+<label>Result</label>
+<select id="result">
+<option>Win</option>
+<option>Loss</option>
+<option>Tie</option>
+</select>
+
+<label>Ranking Points</label>
+<input id="rp" type="number" min="0" max="4">
+</div>
+
+<button class="primary save" onclick="saveMatch()">Save Match</button>
+<button class="primary export" onclick="exportMatch()">Export Match CSV</button>
+
+</div>
+
+<!-- ================= PIT TAB ================= -->
+
+<div id="pitTab" class="hidden">
+
+<div class="section">
+<h3>Pit Scouting</h3>
 
 <label>Team #</label>
 <input id="pitTeam">
 
-<label>Robot Weight (lbs)</label>
-<input id="robotWeight" type="number">
-
-<label>Drivetrain Type</label>
-<select id="drivetrain">
-<option>Swerve</option>
-<option>Tank</option>
-<option>X-Drive</option>
-<option>Mecanum</option>
-<option>Other</option>
-</select>
-
-<label>Estimated Drivetrain Speed</label>
-<select id="driveSpeed">
-<option>Slow</option>
-<option>Medium</option>
-<option>Fast</option>
-</select>
-
-<label>Vision System</label>
-<select id="vision">
-<option>Limelight</option>
-<option>PhotonVision</option>
-<option>None</option>
-<option>Other</option>
-</select>
-
-<label>Practice Field Access?</label>
-<select id="practiceField">
-<option>Yes</option>
-<option>No</option>
-</select>
-
-</div>
-
-<div class="section">
-<h3>Driver & Autonomous</h3>
-
-<label>Driver Experience (1–4)</label>
-<select id="driverRating">
+<label>Driver Rating (1-4)</label>
+<select id="driver">
 <option value="1">1 - Rookie</option>
 <option value="2">2 - 1 Year</option>
 <option value="3">3 - 2 Years</option>
 <option value="4">4 - 3+ Years</option>
 </select>
 
-<label># of Auto Routines</label>
-<input id="autoRoutines" type="number">
-
 <label>Claimed Auto Cycle Count</label>
 <input id="pitAutoCycles" type="number">
 
-<label>Auton Climb Area</label>
-<select id="autoClimbArea">
+<label>Auto Climb Area</label>
+<select id="autoArea">
 <option>Left</option>
 <option>Middle</option>
 <option>Right</option>
 </select>
 
-<label>Preferred Auton Side</label>
-<select id="preferredSide">
+<label>Preferred Auto Side</label>
+<select id="autoSide">
 <option>Left</option>
 <option>Center</option>
 <option>Right</option>
 </select>
 
-</div>
-
-<div class="section">
-<h3>Game Piece Handling</h3>
-
-<label>Max Fuel / Game Piece Capacity</label>
-<input id="fuelCapacity" type="number">
+<label>Max Fuel Capacity</label>
+<input id="fuelCap" type="number">
 
 <label>Intake Speed</label>
-<select id="intakeSpeed">
+<select id="intake">
 <option>Fast</option>
 <option>Medium</option>
 <option>Slow</option>
 </select>
 
-<label>Floor Intake?</label>
-<select id="floorIntake">
-<option>Yes</option>
-<option>No</option>
-</select>
+<label>Upload Robot Photo</label>
+<input type="file" accept="image/*" onchange="previewPhoto(event)">
+<img id="photoPreview" class="preview">
 
-<label>Station Intake?</label>
-<select id="stationIntake">
-<option>Yes</option>
-<option>No</option>
-</select>
-
-<label>Climb Consistency (%)</label>
-<input id="climbConsistency" type="number" min="0" max="100">
-
-</div>
-
-<div class="section">
-<h3>Robot Photo</h3>
-
-<input type="file" accept="image/*" id="robotPhoto" onchange="previewPhoto(event)">
-<img id="photoPreview" class="preview" style="display:none;">
-</div>
-
-<div class="section">
-<h3>Pit Notes</h3>
+<label>Pit Notes</label>
 <textarea id="pitNotes"></textarea>
+
 </div>
 
-<button class="primary-btn save-btn" onclick="savePit()">Save Pit Entry</button>
-<button class="primary-btn export-btn" onclick="exportPit()">Export Pit CSV</button>
-<button class="primary-btn reset-btn" onclick="resetAll()">Reset All Data</button>
+<button class="primary save" onclick="savePit()">Save Pit</button>
+<button class="primary export" onclick="exportPit()">Export Pit CSV</button>
+
+</div>
 
 <script>
-let pitEntries = JSON.parse(localStorage.getItem("pitData") || "[]");
-let currentPhotoBase64 = "";
+let matchData = JSON.parse(localStorage.getItem("matchData")||"[]");
+let pitData = JSON.parse(localStorage.getItem("pitData")||"[]");
 
-function previewPhoto(event){
-  const reader = new FileReader();
-  reader.onload = function(){
-    currentPhotoBase64 = reader.result;
-    const img = document.getElementById("photoPreview");
-    img.src = currentPhotoBase64;
-    img.style.display = "block";
-  };
-  reader.readAsDataURL(event.target.files[0]);
+let currentPhoto = "";
+
+function showTab(tab){
+document.getElementById("matchTab").classList.add("hidden");
+document.getElementById("pitTab").classList.add("hidden");
+document.getElementById(tab+"Tab").classList.remove("hidden");
 }
 
-function savePit(){
-  let entry = {
-    team:pitTeam.value,
-    weight:robotWeight.value,
-    drivetrain:drivetrain.value,
-    driveSpeed:driveSpeed.value,
-    vision:vision.value,
-    practiceField:practiceField.value,
-    driverRating:driverRating.value,
-    autoRoutines:autoRoutines.value,
-    pitAutoCycles:pitAutoCycles.value,
-    autoClimbArea:autoClimbArea.value,
-    preferredSide:preferredSide.value,
-    fuelCapacity:fuelCapacity.value,
-    intakeSpeed:intakeSpeed.value,
-    floorIntake:floorIntake.value,
-    stationIntake:stationIntake.value,
-    climbConsistency:climbConsistency.value,
-    notes:pitNotes.value,
-    photo:currentPhotoBase64
-  };
+/* PHOTO PREVIEW */
+function previewPhoto(event){
+const file = event.target.files[0];
+const reader = new FileReader();
+reader.onload = function(e){
+currentPhoto = e.target.result;
+document.getElementById("photoPreview").src = currentPhoto;
+}
+reader.readAsDataURL(file);
+}
 
-  pitEntries.push(entry);
-  localStorage.setItem("pitData", JSON.stringify(pitEntries));
-  alert("Pit Entry Saved ✅");
+/* MATCH SAVE */
+function saveMatch(){
+let entry={
+match:match.value,
+team:team.value,
+alliance:alliance.value,
+autoCycles:autoCycles.value,
+teleCycles:teleCycles.value,
+climb:climb.value,
+result:result.value,
+rp:rp.value
+};
+
+matchData.push(entry);
+localStorage.setItem("matchData",JSON.stringify(matchData));
+alert("Match Saved ✅");
+}
+
+/* PIT SAVE */
+function savePit(){
+let entry={
+team:pitTeam.value,
+driver:driver.value,
+autoCycles:pitAutoCycles.value,
+autoArea:autoArea.value,
+autoSide:autoSide.value,
+fuelCap:fuelCap.value,
+intake:intake.value,
+photo:currentPhoto,
+notes:pitNotes.value
+};
+
+pitData.push(entry);
+localStorage.setItem("pitData",JSON.stringify(pitData));
+alert("Pit Saved ✅");
+}
+
+/* EXPORT */
+function exportMatch(){
+let csv="match,team,alliance,autoCycles,teleCycles,climb,result,rp\n";
+matchData.forEach(r=>{
+csv+=`${r.match},${r.team},${r.alliance},${r.autoCycles},${r.teleCycles},${r.climb},${r.result},${r.rp}\n`;
+});
+download(csv,"match_scouting.csv");
 }
 
 function exportPit(){
-  let csv = "team,weight,drivetrain,driveSpeed,vision,practiceField,driverRating,autoRoutines,pitAutoCycles,autoClimbArea,preferredSide,fuelCapacity,intakeSpeed,floorIntake,stationIntake,climbConsistency,notes,photo\n";
-
-  pitEntries.forEach(r=>{
-    const esc = s => `"${(s||"").replace(/"/g,'""')}"`;
-    csv += `${r.team},${r.weight},${r.drivetrain},${r.driveSpeed},${r.vision},${r.practiceField},${r.driverRating},${r.autoRoutines},${r.pitAutoCycles},${r.autoClimbArea},${r.preferredSide},${r.fuelCapacity},${r.intakeSpeed},${r.floorIntake},${r.stationIntake},${r.climbConsistency},${esc(r.notes)},${esc(r.photo)}\n`;
-  });
-
-  downloadCSV(csv,"pit_scouting.csv");
+let csv="team,driver,autoCycles,autoArea,autoSide,fuelCap,intake,photoBase64,notes\n";
+pitData.forEach(r=>{
+csv+=`${r.team},${r.driver},${r.autoCycles},${r.autoArea},${r.autoSide},${r.fuelCap},${r.intake},"${r.photo}","${r.notes}"\n`;
+});
+download(csv,"pit_scouting.csv");
 }
 
-function downloadCSV(csv,name){
-  const blob = new Blob([csv], {type:"text/csv"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  a.click();
-}
-
-function resetAll(){
-  if(confirm("Delete ALL pit data?")){
-    localStorage.removeItem("pitData");
-    pitEntries = [];
-    alert("All pit data cleared.");
-  }
+function download(csv,name){
+const blob=new Blob([csv],{type:"text/csv"});
+const url=URL.createObjectURL(blob);
+const a=document.createElement("a");
+a.href=url;
+a.download=name;
+a.click();
 }
 </script>
 
