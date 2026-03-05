@@ -416,13 +416,25 @@ function savePit(){
     stationIntake:stationIntake.value,
     climbConsistency:climbConsistency.value,
     notes:pitNotes.value,
-    photo:currentPhotoBase64
+    photo:currentPhotoBase64,
+    mode: "pit"  // <--- add this
   };
 
   pitEntries.push(entry);
   localStorage.setItem("pitData", JSON.stringify(pitEntries));
+
+  // send to Google Sheets
+  fetch("https://script.google.com/macros/s/AKfycbxED_FDYedlQbOI0EUbeI7Jx4Pnna0emgjnIcXMW2ZwZCJ-g0BgwhYCo3-bStwXoobxsQ/exec", {
+    method: "POST",
+    body: JSON.stringify(entry)
+  })
+  .then(res => res.text())
+  .then(data => console.log("Sent Pit to master:", data))
+  .catch(err => console.error(err));
+
   alert("Pit Entry Saved ✅");
 }
+
 
 function exportPit(){
   let csv = "team,weight,drivetrain,driveSpeed,vision,practiceField,driverRating,autoRoutines,pitAutoCycles,autoClimbArea,preferredSide,fuelCapacity,intakeSpeed,floorIntake,stationIntake,climbConsistency,notes,photo\n";
@@ -476,5 +488,6 @@ function toggleMode(){
   }
 }
 </script>
+
 
 
