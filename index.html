@@ -329,6 +329,15 @@ if('serviceWorker' in navigator){
 <div class="section">
 <h3>Game Piece Handling</h3>
 
+<label>Shooting Ability</label>
+<input id="shootScore" type="number">
+
+<label>Defense Ability</label>
+<input id="defenseScore" type="number">
+
+<label>Feed Ability</label>
+<input id="feedScore" type="number">
+
 <label>Max Fuel / Game Piece Capacity</label>
 <input id="fuelCapacity" type="number">
 
@@ -351,17 +360,20 @@ if('serviceWorker' in navigator){
 <option>No</option>
 </select>
 
+<label>Intake Size (Ball Width)</label>
+<input id="intakeSize" type="number">
+
 <label>Climb Consistency (%)</label>
 <input id="climbConsistency" type="number" min="0" max="100">
 
 </div>
 
-<div class="section">
+<!-- <div class="section">
 <h3>Robot Photo</h3>
 
 <input type="file" accept="image/*" id="robotPhoto" onchange="previewPhoto(event)">
 <img id="photoPreview" class="preview" style="display:none;">
-</div>
+</div> -->
 
 <div class="section">
 <h3>Pit Notes</h3>
@@ -400,10 +412,14 @@ function savePit(){
     pitAutoCycles:pitAutoCycles.value,
     autoClimbArea:autoClimbArea.value,
     preferredSide:preferredSide.value,
+    shootScore:shootScore.value,
+    defenseScore:defenseScore.value,
+    feedScore:feedScore.value,
     fuelCapacity:fuelCapacity.value,
     intakeSpeed:intakeSpeed.value,
     floorIntake:floorIntake.value,
     stationIntake:stationIntake.value,
+    intakeSize:intakeSize.value,
     climbConsistency:climbConsistency.value,
     notes:pitNotes.value,
     photo:currentPhotoBase64,
@@ -425,7 +441,7 @@ function exportPit(){
   let csv = "team,weight,drivetrain,driveSpeed,vision,practiceField,driverRating,autoRoutines,pitAutoCycles,autoClimbArea,preferredSide,fuelCapacity,intakeSpeed,floorIntake,stationIntake,climbConsistency,notes,photo\n";
   pitEntries.forEach(r=>{
     const esc = s => `"${(s||"").replace(/"/g,'""')}"`;
-    csv += `${r.team},${r.weight},${r.drivetrain},${r.driveSpeed},${r.vision},${r.practiceField},${r.driverRating},${r.autoRoutines},${r.pitAutoCycles},${r.autoClimbArea},${r.preferredSide},${r.fuelCapacity},${r.intakeSpeed},${r.floorIntake},${r.stationIntake},${r.climbConsistency},${esc(r.notes)},${esc(r.photo)}\n`;
+    csv += `${r.team},${r.weight},${r.drivetrain},${r.driveSpeed},${r.vision},${r.practiceField},${r.driverRating},${r.autoRoutines},${r.pitAutoCycles},${r.autoClimbArea},${r.preferredSide},${r.shootScore},${r.defenseScore},${r.feedScore},${r.fuelCapacity},${r.intakeSpeed},${r.floorIntake},${r.intakeSize},${r.stationIntake},${r.climbConsistency},${esc(r.notes)},${esc(r.photo)}\n`;
   });
   downloadCSV(csv,"pit_scouting.csv");
 }
