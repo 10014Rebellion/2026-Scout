@@ -11,8 +11,11 @@
 <h2>FRC 2026 – Scouting App</h2>
 
 <button onclick="toggleMode()" style="width:100%;padding:0.8rem;margin-bottom:1rem;border:none;border-radius:12px;background:#facc15;font-weight:bold;cursor:pointer;">
-Switch to Pit Scouting
+  Switch to Pit Scouting
 </button>
+
+<label>Who is this?</label>
+<input id="scout" placeholder="Scouter Name">
 
 <div id="matchScouting">
 
@@ -24,6 +27,7 @@ Switch to Pit Scouting
 
 <label>Team #</label>
 <input id="team">
+
 
 <label>Alliance</label>
 <select id="alliance">
@@ -158,93 +162,6 @@ Switch to Pit Scouting
 <button class="primary-btn save-btn" onclick="saveEntry()">Save Entry</button>
 <button class="primary-btn export-btn" onclick="exportCSV()">Export CSV</button>
 <button class="primary-btn reset-btn" onclick="resetAll()">Reset All Data</button>
-
-<script>
-let entries = JSON.parse(localStorage.getItem("frcData") || "[]");
-
-function sendToMaster(entry){
-  entry.mode = "match";
-  fetch("https://script.google.com/macros/s/AKfycbyC4TEJL34K6IC_9BvV_LNpRPTMLVFPybANvH5lJ6X2KAQOuc8gS-yCIpYlP9JaWoH9fQ/exec", {
-    method: "POST",
-    body: JSON.stringify(entry)
-  })
-  .then(res => res.text())
-  .then(data => console.log("Sent to master:", data))
-  .catch(err => console.error(err));
-}
-
-function change(id, delta){
-  let el = document.getElementById(id);
-  let val = parseInt(el.value) || 0;
-  val += delta;
-  if(val < 0) val = 0;
-  el.value = val;
-}
-
-function saveEntry(){
-let entry = {
-  match:match.value,
-  team:team.value,
-  alliance:alliance.value,
-  role:role.value,
-  autoCycles:autoCycles.value,
-  autoBad:autoBad.value,
-  autoClimb:autoClimb.value,
-  autoCycleTime:autoCycleTime.value,
-  teleCycles:teleCycles.value,
-  teleBad:teleBad.value,
-  teleClimb:teleClimb.value,
-  teleCycleTime:teleCycleTime.value,
-  climbTime:climbTime.value,
-  intakeSpeed:intakeSpeed.value,
-  result:result.value,
-  rankingPoints:rankingPoints.value,
-  defense:defense.value,
-  penalties:penalties.value,
-  penaltyPotential:penaltyPotential.checked,
-  brokeDown:brokeDown.checked,
-  tippedOver:tippedOver.checked,
-  disabled:disabled.checked,
-  notes:notes.value
-};
-  entries.push(entry);
-  sendToMaster(entry);
-  localStorage.setItem("frcData", JSON.stringify(entries));
-  alert("Saved Offline ✅");
-}
-
-function exportCSV(){
-  if(entries.length === 0){
-    alert("No data saved.");
-    return;
-  }
-  let csv = "match,team,alliance,role,autoCycles,autoBad,autoClimb,autoCycleTime,teleCycles,teleBad,teleClimb,teleCycleTime,climbTime,intakeSpeed,result,rankingPoints,defense,penaltyPotential,brokeDown,tippedOver,disabled,penalties,notes\n";
-  entries.forEach(r=>{
-    const esc = s => `"${(s||"").replace(/"/g,'""')}"`;
-    csv += `${r.match},${r.team},${r.alliance},${r.role},${r.autoCycles},${r.autoBad},${r.autoClimb},${r.autoCycleTime},${r.teleCycles},${r.teleBad},${r.teleClimb},${r.teleCycleTime},${r.climbTime},${r.intakeSpeed},${r.result},${r.rankingPoints},${r.defense},${r.penaltyPotential},${r.brokeDown},${r.tippedOver},${r.disabled},${esc(r.penalties)},${esc(r.notes)}\n`;
-  });
-  const blob = new Blob([csv], {type:"text/csv"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "frc2026_scouting.csv";
-  a.click();
-}
-
-function resetAll(){
-  if(confirm("Are you sure you want to delete ALL saved scouting data?")){
-    localStorage.removeItem("frcData");
-    entries = [];
-    alert("All data cleared!");
-  }
-}
-</script>
-
-<script>
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js');
-}
-</script>
 
 </div>
 
@@ -384,70 +301,21 @@ if('serviceWorker' in navigator){
 <button class="primary-btn export-btn" onclick="exportPit()">Export Pit CSV</button>
 <button class="primary-btn reset-btn" onclick="resetAll()">Reset All Data</button>
 
+</div>
+
 <script>
+// ===== GLOBAL STATE =====
+let entries = JSON.parse(localStorage.getItem("frcData") || "[]");
 let pitEntries = JSON.parse(localStorage.getItem("pitData") || "[]");
+let currentMode = "match";
 let currentPhotoBase64 = "";
 
-function previewPhoto(event){
-  const reader = new FileReader();
-  reader.onload = function(){
-    currentPhotoBase64 = reader.result;
-    const img = document.getElementById("photoPreview");
-    img.src = currentPhotoBase64;
-    img.style.display = "block";
-  };
-  reader.readAsDataURL(event.target.files[0]);
-}
+// ===== GOOGLE APPS SCRIPT URLs =====
+const MATCH_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwRCepYVkEhihboTrliZinnu-y766CzrJXoBTN_3IU5hEC2fgEQXOZNwcd_MyGUV24CPA/exec";
 
-function savePit(){
-  let entry = {
-    team:pitTeam.value,
-    weight:robotWeight.value,
-    drivetrain:drivetrain.value,
-    driveSpeed:driveSpeed.value,
-    vision:vision.value,
-    practiceField:practiceField.value,
-    driverRating:driverRating.value,
-    autoRoutines:autoRoutines.value,
-    pitAutoCycles:pitAutoCycles.value,
-    autoClimbArea:autoClimbArea.value,
-    preferredSide:preferredSide.value,
-    shootScore:shootScore.value,
-    defenseScore:defenseScore.value,
-    feedScore:feedScore.value,
-    fuelCapacity:fuelCapacity.value,
-    intakeSpeed:intakeSpeed.value,
-    floorIntake:floorIntake.value,
-    stationIntake:stationIntake.value,
-    intakeSize:intakeSize.value,
-    climbConsistency:climbConsistency.value,
-    notes:pitNotes.value,
-    // photo:currentPhotoBase64,
-    mode: "pit"
-  };
-  pitEntries.push(entry);
-  localStorage.setItem("pitData", JSON.stringify(pitEntries));
-  fetch("https://script.google.com/macros/s/AKfycbyC4TEJL34K6IC_9BvV_LNpRPTMLVFPybANvH5lJ6X2KAQOuc8gS-yCIpYlP9JaWoH9fQ/exec", {
-    method: "POST",
-    body: JSON.stringify(entry)
-  })
-  .then(res => res.text())
-  .then(data => console.log("Sent Pit to master:", data))
-  .catch(err => console.error(err));
-  alert("Pit Entry Saved ✅");
-}
-
-function exportPit(){
-  let csv = "team,weight,drivetrain,driveSpeed,vision,practiceField,driverRating,autoRoutines,pitAutoCycles,autoClimbArea,preferredSide,fuelCapacity,intakeSpeed,floorIntake,stationIntake,climbConsistency,notes,photo\n";
-  pitEntries.forEach(r=>{
-    const esc = s => `"${(s||"").replace(/"/g,'""')}"`;
-    csv += `${r.team},${r.weight},${r.drivetrain},${r.driveSpeed},${r.vision},${r.practiceField},${r.driverRating},${r.autoRoutines},${r.pitAutoCycles},${r.autoClimbArea},${r.preferredSide},${r.shootScore},${r.defenseScore},${r.feedScore},${r.fuelCapacity},${r.intakeSpeed},${r.floorIntake},${r.intakeSize},${r.stationIntake},${r.climbConsistency},${esc(r.notes)},${esc(r.photo)}\n`;
-  });
-  downloadCSV(csv,"pit_scouting.csv");
-}
-
-function downloadCSV(csv,name){
-  const blob = new Blob([csv], {type:"text/csv"});
+// ===== SHARED FUNCTIONS =====
+function downloadCSV(csv, name) {
+  const blob = new Blob([csv], {type: "text/csv"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -455,26 +323,29 @@ function downloadCSV(csv,name){
   a.click();
 }
 
-function resetAll(){
-  if(confirm("Delete ALL pit data?")){
-    localStorage.removeItem("pitData");
-    pitEntries = [];
-    alert("All pit data cleared.");
+function resetAll() {
+  if(currentMode === "match") {
+    if(confirm("Are you sure you want to delete ALL saved scouting data?")) {
+      localStorage.removeItem("frcData");
+      entries = [];
+      alert("All data cleared!");
+    }
+  } else {
+    if(confirm("Delete ALL pit data?")) {
+      localStorage.removeItem("pitData");
+      pitEntries = [];
+      alert("All pit data cleared.");
+    }
   }
 }
-</script>
 
-</div>
-
-<script>
-let currentMode = "match";
-
-function toggleMode(){
+// ===== UI FUNCTIONS =====
+function toggleMode() {
   const match = document.getElementById("matchScouting");
   const pit = document.getElementById("pitScouting");
   const btn = document.querySelector("button");
 
-  if(currentMode === "match"){
+  if(currentMode === "match") {
     match.style.display = "none";
     pit.style.display = "block";
     btn.innerText = "Switch to Match Scouting";
@@ -485,6 +356,142 @@ function toggleMode(){
     btn.innerText = "Switch to Pit Scouting";
     currentMode = "match";
   }
+}
+
+// ===== MATCH SCOUTING FUNCTIONS =====
+function sendToMaster(entry) {
+  entry.mode = "match";
+  fetch(MATCH_SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify(entry)
+  })
+  .then(res => res.text())
+  .then(data => console.log("Sent to master:", data))
+  .catch(err => console.error(err));
+}
+
+function change(id, delta) {
+  let el = document.getElementById(id);
+  let val = parseInt(el.value) || 0;
+  val += delta;
+  if(val < 0) val = 0;
+  el.value = val;
+}
+
+function saveEntry() {
+  let entry = {
+    scout: scout.value,
+    match: match.value,
+    team: team.value,
+    alliance: alliance.value,
+    role: role.value,
+    autoCycles: autoCycles.value,
+    autoBad: autoBad.value,
+    autoClimb: autoClimb.value,
+    autoCycleTime: autoCycleTime.value,
+    teleCycles: teleCycles.value,
+    teleBad: teleBad.value,
+    teleClimb: teleClimb.value,
+    teleCycleTime: teleCycleTime.value,
+    climbTime: climbTime.value,
+    intakeSpeed: intakeSpeed.value,
+    result: result.value,
+    rankingPoints: rankingPoints.value,
+    defense: defense.value,
+    penalties: penalties.value,
+    penaltyPotential: penaltyPotential.checked,
+    brokeDown: brokeDown.checked,
+    tippedOver: tippedOver.checked,
+    disabled: disabled.checked,
+    notes: notes.value
+  };
+  entries.push(entry);
+  sendToMaster(entry);
+  localStorage.setItem("frcData", JSON.stringify(entries));
+  alert("Saved Offline ✅");
+}
+
+function exportCSV() {
+  if(entries.length === 0) {
+    alert("No data saved.");
+    return;
+  }
+  let csv = "match,team,alliance,role,autoCycles,autoBad,autoClimb,autoCycleTime,teleCycles,teleBad,teleClimb,teleCycleTime,climbTime,intakeSpeed,result,rankingPoints,defense,penaltyPotential,brokeDown,tippedOver,disabled,penalties,notes\n";
+  entries.forEach(r => {
+    const esc = s => `"${(s || "").replace(/"/g, '""')}"`;
+    csv += `${r.match},${r.team},${r.alliance},${r.role},${r.autoCycles},${r.autoBad},${r.autoClimb},${r.autoCycleTime},${r.teleCycles},${r.teleBad},${r.teleClimb},${r.teleCycleTime},${r.climbTime},${r.intakeSpeed},${r.result},${r.rankingPoints},${r.defense},${r.penaltyPotential},${r.brokeDown},${r.tippedOver},${r.disabled},${esc(r.penalties)},${esc(r.notes)}\n`;
+  });
+  const blob = new Blob([csv], {type: "text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "frc2026_scouting.csv";
+  a.click();
+}
+
+// ===== PIT SCOUTING FUNCTIONS =====
+function previewPhoto(event) {
+  const reader = new FileReader();
+  reader.onload = function() {
+    currentPhotoBase64 = reader.result;
+    const img = document.getElementById("photoPreview");
+    img.src = currentPhotoBase64;
+    img.style.display = "block";
+  };
+  reader.readAsDataURL(event.target.files[0]);
+}
+
+function savePit() {
+  let entry = {
+    scout: scout.value,
+    team: pitTeam.value,
+    weight: robotWeight.value,
+    drivetrain: drivetrain.value,
+    driveSpeed: driveSpeed.value,
+    vision: vision.value,
+    practiceField: practiceField.value,
+    driverRating: driverRating.value,
+    autoRoutines: autoRoutines.value,
+    pitAutoCycles: pitAutoCycles.value,
+    autoClimbArea: autoClimbArea.value,
+    preferredSide: preferredSide.value,
+    shootScore: shootScore.value,
+    defenseScore: defenseScore.value,
+    feedScore: feedScore.value,
+    fuelCapacity: fuelCapacity.value,
+    intakeSpeed: intakeSpeed.value,
+    floorIntake: floorIntake.value,
+    stationIntake: stationIntake.value,
+    intakeSize: intakeSize.value,
+    climbConsistency: climbConsistency.value,
+    notes: pitNotes.value,
+    // photo: currentPhotoBase64,
+    mode: "pit"
+  };
+  pitEntries.push(entry);
+  localStorage.setItem("pitData", JSON.stringify(pitEntries));
+  fetch(PIT_SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify(entry)
+  })
+  .then(res => res.text())
+  .then(data => console.log("Sent Pit to master:", data))
+  .catch(err => console.error(err));
+  alert("Pit Entry Saved ✅");
+}
+
+function exportPit() {
+  let csv = "team,weight,drivetrain,driveSpeed,vision,practiceField,driverRating,autoRoutines,pitAutoCycles,autoClimbArea,preferredSide,fuelCapacity,intakeSpeed,floorIntake,stationIntake,climbConsistency,notes,photo\n";
+  pitEntries.forEach(r => {
+    const esc = s => `"${(s || "").replace(/"/g, '""')}"`;
+    csv += `${r.team},${r.weight},${r.drivetrain},${r.driveSpeed},${r.vision},${r.practiceField},${r.driverRating},${r.autoRoutines},${r.pitAutoCycles},${r.autoClimbArea},${r.preferredSide},${r.shootScore},${r.defenseScore},${r.feedScore},${r.fuelCapacity},${r.intakeSpeed},${r.floorIntake},${r.intakeSize},${r.stationIntake},${r.climbConsistency},${esc(r.notes)},${esc(r.photo)}\n`;
+  });
+  downloadCSV(csv, "pit_scouting.csv");
+}
+
+// ===== SERVICE WORKER REGISTRATION =====
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
 }
 </script>
 
