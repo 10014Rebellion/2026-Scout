@@ -12,7 +12,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@auth/core": "^0.41.3",
     "@base-ui/react": "^1.8.0",
+    "@convex-dev/auth": "^0.0.95",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.3.0",
     "convex": "^1.46.0",
