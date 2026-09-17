@@ -6,6 +6,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { ConvexClientProvider } from "@/components/convex-client-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
+import { OfflineBanner } from "@/components/offline-banner"
+import { OfflineSyncProvider } from "@/components/offline-sync-provider"
 import { cn } from "@/lib/utils";
 
 const fontSans = IBM_Plex_Sans({
@@ -47,7 +49,11 @@ export default async function RootLayout({
         <body>
           <ConvexClientProvider>
             <ThemeProvider>
-              <TooltipProvider>{children}</TooltipProvider>
+              <TooltipProvider>
+                <OfflineBanner />
+                <OfflineSyncProvider />
+                {children}
+              </TooltipProvider>
             </ThemeProvider>
           </ConvexClientProvider>
           <Toaster />

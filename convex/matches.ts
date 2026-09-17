@@ -1,6 +1,13 @@
 import { v } from "convex/values"
 import { query } from "./_generated/server"
 
+export const getById = query({
+  args: { matchId: v.id("matches") },
+  handler: async (ctx, { matchId }) => {
+    return await ctx.db.get(matchId)
+  },
+})
+
 export const listByEvent = query({
   args: { eventId: v.id("events") },
   handler: async (ctx, { eventId }) => {

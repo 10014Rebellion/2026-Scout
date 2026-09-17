@@ -39,6 +39,13 @@ function ScoutAssignmentContent() {
   const [newScoutName, setNewScoutName] = useState("")
   const [isRebalancing, setIsRebalancing] = useState(false)
 
+  // Base UI's Select shows a raw value string when closed unless given a
+  // value->label map up front (it can't read SelectItem children, which
+  // are unmounted while the popup is closed).
+  const scoutLabels = Object.fromEntries(
+    (scouts ?? []).map((scout) => [scout._id, scout.name]),
+  )
+
   async function handleAddScout(event: React.FormEvent) {
     event.preventDefault()
     if (newScoutName.trim().length === 0) return
@@ -132,6 +139,7 @@ function ScoutAssignmentContent() {
               <p className="text-xs text-muted-foreground">{row.team.nickname}</p>
             </div>
             <Select
+              items={scoutLabels}
               value={row.scoutId ?? undefined}
               onValueChange={(scoutId) =>
                 reassignTeam({
