@@ -47,7 +47,6 @@ export default defineSchema({
     country: v.optional(v.string()),
   })
     .index("by_event", ["eventId"])
-    .index("by_tbaTeamKey", ["tbaTeamKey"])
     .index("by_event_teamNumber", ["eventId", "teamNumber"]),
 
   matches: defineTable({

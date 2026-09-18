@@ -150,10 +150,20 @@ export const upsertEventData = internalMutation({
       })
     }
 
+    // Scoped by (eventId, teamNumber), not globally by tbaTeamKey. A real
+    // team's tbaTeamKey (e.g. "frc254") is the same across every event it
+    // attends, so a global lookup would find and reuse that team's row
+    // from a PREVIOUS event, silently carrying over its old pitReports/
+    // matchReports/aiTeamAnalysis (all keyed by this team's persistent
+    // _id, not by event) into the newly active event. Scoping to the
+    // current event means a team new to this event always gets a fresh
+    // row -- and therefore a clean scouting slate -- while re-importing
+    // the SAME event (same eventId) still correctly finds and updates
+    // its existing rows.
     for (const team of teams) {
       const existing = await ctx.db
         .query("teams")
-        .withIndex("by_tbaTeamKey", (q) => q.eq("tbaTeamKey", team.tbaTeamKey))
+        .withIndex("by_event_teamNumber", (q) => q.eq("eventId", eventId).eq("teamNumber", team.teamNumber))
         .unique()
       if (existing) {
         await ctx.db.patch(existing._id, { ...team, eventId })
