@@ -447,6 +447,53 @@ export const upsertAnalysisAndSummary = internalMutation({
   },
 })
 
+// A match is skipped once it's already analyzed and nothing feeding that
+// analysis has changed since -- otherwise every click of "Run analysis"
+// would burn a full event's worth of Gemini calls re-deriving identical
+// estimates. Re-included only when: a team in the match has no analysis
+// yet (new match, or one that errored out last run), or a team's scout
+// report was submitted/edited after its existing analysis was generated
+// (new signal actually worth re-running Gemini on). Unresolvable teams are
+// included too, so the existing "could not resolve all teams" error path
+// still surfaces instead of silently skipping forever.
+async function matchNeedsAnalysis(
+  ctx: Parameters<typeof requireAdmin>[0],
+  match: Doc<"matches">,
+): Promise<boolean> {
+  const teamNumbers = [...match.redTeamNumbers, ...match.blueTeamNumbers]
+  const teams = await Promise.all(
+    teamNumbers.map((teamNumber) =>
+      ctx.db
+        .query("teams")
+        .withIndex("by_event_teamNumber", (q) => q.eq("eventId", match.eventId).eq("teamNumber", teamNumber))
+        .unique(),
+    ),
+  )
+  const resolvedTeams = teams.filter((t): t is Doc<"teams"> => t !== null)
+  if (resolvedTeams.length !== teamNumbers.length) {
+    return true
+  }
+
+  for (const team of resolvedTeams) {
+    const analysis = await ctx.db
+      .query("aiTeamAnalysis")
+      .withIndex("by_match_team", (q) => q.eq("matchId", match._id).eq("teamId", team._id))
+      .unique()
+    if (!analysis) {
+      return true
+    }
+    const report = await ctx.db
+      .query("matchReports")
+      .withIndex("by_match_team", (q) => q.eq("matchId", match._id).eq("teamId", team._id))
+      .unique()
+    if (report && report.submittedAt > analysis.generatedAt) {
+      return true
+    }
+  }
+
+  return false
+}
+
 export const startAnalysisRun = mutation({
   args: { eventId: v.id("events") },
   handler: async (ctx, { eventId }): Promise<Id<"aiAnalysisJobs">> => {
@@ -473,18 +520,30 @@ export const startAnalysisRun = mutation({
       throw new Error("No played matches with synced TBA scores found -- run the TBA score sync first")
     }
 
+    const pendingMatches = []
+    for (const match of readyMatches) {
+      if (await matchNeedsAnalysis(ctx, match)) {
+        pendingMatches.push(match)
+      }
+    }
+    if (pendingMatches.length === 0) {
+      throw new Error(
+        "Every played match is already analyzed with the current scout data -- nothing new to process",
+      )
+    }
+
     const now = Date.now()
     const runId = await ctx.db.insert("aiAnalysisJobs", {
       eventId,
       status: "running",
-      totalMatches: readyMatches.length,
+      totalMatches: pendingMatches.length,
       processedMatches: 0,
       windowStartedAt: now,
       consecutive429s: 0,
       startedAt: now,
     })
 
-    for (const match of readyMatches) {
+    for (const match of pendingMatches) {
       await ctx.db.insert("aiAnalysisQueue", {
         runId,
         matchId: match._id,
