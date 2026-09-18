@@ -50,6 +50,42 @@ export default defineSchema({
     city: v.optional(v.string()),
     stateProv: v.optional(v.string()),
     country: v.optional(v.string()),
+    // Current-event qualification standing, from TBA's /event/{key}/rankings.
+    // Populated by tbaImport's ranking sync; null/absent rank means TBA
+    // hasn't published a ranking yet (e.g. before quals start) -- never
+    // inferred from match results ourselves.
+    qualRank: v.optional(v.number()),
+    qualNumTeams: v.optional(v.number()),
+    qualWins: v.optional(v.number()),
+    qualLosses: v.optional(v.number()),
+    qualTies: v.optional(v.number()),
+    // Set whenever syncPreviousEventInfo runs for this team, whether or not
+    // it found a prior event -- lets the UI distinguish "checked TBA, there
+    // genuinely isn't one" from "never synced yet" instead of guessing.
+    previousEventCheckedAt: v.optional(v.number()),
+    // Snapshot of this team's most recent OTHER competition this same
+    // season, strictly before the active event's start date. Sourced from
+    // TBA's per-team event-status endpoint; absent entirely if TBA has no
+    // qualifying prior event (never fabricated). See tbaPreviousEvent.ts.
+    previousEvent: v.optional(
+      v.object({
+        tbaEventKey: v.string(),
+        name: v.string(),
+        endDate: v.string(),
+        qualRank: v.optional(v.number()),
+        qualNumTeams: v.optional(v.number()),
+        qualWins: v.optional(v.number()),
+        qualLosses: v.optional(v.number()),
+        qualTies: v.optional(v.number()),
+        allianceNumber: v.optional(v.number()),
+        alliancePick: v.optional(v.number()),
+        playoffLevel: v.optional(v.string()),
+        playoffStatus: v.optional(v.string()),
+        playoffWins: v.optional(v.number()),
+        playoffLosses: v.optional(v.number()),
+        playoffTies: v.optional(v.number()),
+      }),
+    ),
   })
     .index("by_event", ["eventId"])
     .index("by_event_teamNumber", ["eventId", "teamNumber"]),

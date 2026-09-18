@@ -13,6 +13,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { ConfidenceBadge, CLIMB_LABEL } from "@/components/confidence-badge"
 import { TIER_LABELS, type TierValue } from "@/components/pick-list/types"
+import { formatOrdinalPick, formatPlayoffResult, formatRecord } from "@/lib/format-team-status"
 
 const SLIDER_LABELS: Record<string, string> = {
   teleopScoring: "Teleop scoring",
@@ -78,6 +79,106 @@ export function TeamDetailDialog({
             <span className="font-semibold">{TIER_LABELS[tier]}</span>
           </DialogDescription>
         </DialogHeader>
+
+        <Section title="This event">
+          <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex flex-col">
+              <span className="font-mono text-base font-semibold">
+                {team?.qualRank !== undefined
+                  ? `#${team.qualRank}${team.qualNumTeams ? ` / ${team.qualNumTeams}` : ""}`
+                  : "—"}
+              </span>
+              <span className="text-xs text-muted-foreground">qual rank</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-mono text-base font-semibold">
+                {formatRecord(
+                  team?.qualWins !== undefined
+                    ? { wins: team.qualWins, losses: team.qualLosses ?? 0, ties: team.qualTies ?? 0 }
+                    : null,
+                ) ?? "—"}
+              </span>
+              <span className="text-xs text-muted-foreground">qual record</span>
+            </div>
+          </div>
+        </Section>
+
+        <Separator />
+
+        <Section title="Previous event" badge={<span className="text-[10px] font-normal text-muted-foreground">(different competition -- not this event)</span>}>
+          {team === undefined && <Loading />}
+          {team && team.previousEvent === undefined && team.previousEventCheckedAt === undefined && (
+            <Empty text="Not yet checked -- run &ldquo;Sync previous-event data&rdquo; on the Team List page." />
+          )}
+          {team && team.previousEvent === undefined && team.previousEventCheckedAt !== undefined && (
+            <Empty text="No other competition on record for this team this season." />
+          )}
+          {team?.previousEvent && (
+            <div className="flex flex-col gap-2 text-sm">
+              <p className="font-medium">
+                {team.previousEvent.name}
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  ended {team.previousEvent.endDate}
+                </span>
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex flex-col">
+                  <span className="font-mono text-base font-semibold">
+                    {team.previousEvent.qualRank !== undefined
+                      ? `#${team.previousEvent.qualRank}${team.previousEvent.qualNumTeams ? ` / ${team.previousEvent.qualNumTeams}` : ""}`
+                      : "Unavailable"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">qual rank</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-mono text-base font-semibold">
+                    {formatRecord(
+                      team.previousEvent.qualWins !== undefined
+                        ? {
+                            wins: team.previousEvent.qualWins,
+                            losses: team.previousEvent.qualLosses ?? 0,
+                            ties: team.previousEvent.qualTies ?? 0,
+                          }
+                        : null,
+                    ) ?? "—"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">qual record</span>
+                </div>
+                {team.previousEvent.allianceNumber !== undefined && (
+                  <div className="flex flex-col">
+                    <span className="font-mono text-base font-semibold">
+                      Alliance {team.previousEvent.allianceNumber}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {team.previousEvent.alliancePick !== undefined
+                        ? formatOrdinalPick(team.previousEvent.alliancePick)
+                        : "selection"}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {formatPlayoffResult(team.previousEvent.playoffLevel, team.previousEvent.playoffStatus) && (
+                <p className="text-muted-foreground">
+                  {formatPlayoffResult(team.previousEvent.playoffLevel, team.previousEvent.playoffStatus)}
+                  {team.previousEvent.playoffWins !== undefined && (
+                    <>
+                      {" "}
+                      (playoff record{" "}
+                      {formatRecord({
+                        wins: team.previousEvent.playoffWins,
+                        losses: team.previousEvent.playoffLosses ?? 0,
+                        ties: team.previousEvent.playoffTies ?? 0,
+                      })}
+                      )
+                    </>
+                  )}
+                </p>
+              )}
+            </div>
+          )}
+        </Section>
+
+        <Separator />
 
         <Section title="AI analysis">
           {analyses === undefined && <Loading />}
