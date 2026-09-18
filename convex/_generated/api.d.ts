@@ -10,6 +10,7 @@
 
 import type * as aiAnalysis from "../aiAnalysis.js";
 import type * as auth from "../auth.js";
+import type * as dataExport from "../dataExport.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as matchReports from "../matchReports.js";
@@ -32,6 +33,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   aiAnalysis: typeof aiAnalysis;
   auth: typeof auth;
+  dataExport: typeof dataExport;
   events: typeof events;
   http: typeof http;
   matchReports: typeof matchReports;

@@ -77,6 +77,47 @@ export const dashboardForScout = query({
   },
 })
 
+// All of a team's match reports, newest match first -- for the Team
+// Detail view (scouting history across the whole event, not one scout's
+// dashboard).
+export const listByTeam = query({
+  args: { teamId: v.id("teams") },
+  handler: async (ctx, { teamId }) => {
+    const reports = await ctx.db
+      .query("matchReports")
+      .withIndex("by_team", (q) => q.eq("teamId", teamId))
+      .collect()
+    const withMatches = await Promise.all(
+      reports.map(async (report) => ({
+        report,
+        match: await ctx.db.get(report.matchId),
+      })),
+    )
+    return withMatches.sort((a, b) => (b.match?.matchNumber ?? 0) - (a.match?.matchNumber ?? 0))
+  },
+})
+
+// Report counts per team -- drives the Team List grid without an N+1
+// query per card.
+export const countsForEvent = query({
+  args: { eventId: v.id("events") },
+  handler: async (ctx, { eventId }) => {
+    const teams = await ctx.db
+      .query("teams")
+      .withIndex("by_event", (q) => q.eq("eventId", eventId))
+      .collect()
+    const counts: Record<string, number> = {}
+    for (const team of teams) {
+      const reports = await ctx.db
+        .query("matchReports")
+        .withIndex("by_team", (q) => q.eq("teamId", team._id))
+        .collect()
+      counts[team._id] = reports.length
+    }
+    return counts
+  },
+})
+
 // One report per (match, team) pair -- patches an existing row if the
 // scout is correcting an earlier submission.
 export const submit = mutation({
