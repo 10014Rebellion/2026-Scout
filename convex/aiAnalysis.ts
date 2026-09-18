@@ -12,22 +12,27 @@ import { Doc, Id } from "./_generated/dataModel"
 import { requireAdmin } from "./auth"
 import type { TbaAllianceBreakdown } from "./tbaScoreSync"
 
-// gemini-3.8-flash, verified current as of Sept 2026 (see task brief).
-// generateContent is used here rather than the newer Interactions API
-// (GA'd June 2026, now Google's documented default entry point) --
-// generateContent is explicitly still fully supported for one-shot,
-// stateless calls like this one, and its structured-output request/response
-// shape is well-documented and stable, whereas the Interactions API's exact
-// JSON contract could not be confirmed from available docs at the time this
-// was written. Revisit if generateContent is ever actually sunset.
-const GEMINI_MODEL = "gemini-3.8-flash"
+// gemini-3.5-flash-lite. The full "Flash" models (3.5/3.6/3.7/3.8) are
+// capped at a free-tier 20 requests/DAY (confirmed live: 2026-09-17,
+// exceeded exactly this limit mid-run against a real event). The "Flash
+// Lite" variants get a far more generous free-tier quota -- 500
+// requests/day, 15 requests/minute (confirmed via the account's own
+// aistudio.google.com/rate-limit page) -- which a real competition day
+// (~70-100 matches x 2 calls) comfortably fits inside, where the full
+// model's 20/day would not. generateContent is used here rather than the
+// newer Interactions API (GA'd June 2026, now Google's documented default
+// entry point) -- generateContent is explicitly still fully supported for
+// one-shot, stateless calls like this one, and its structured-output
+// request/response shape is well-documented and stable, whereas the
+// Interactions API's exact JSON contract could not be confirmed from
+// available docs at the time this was written.
+const GEMINI_MODEL = "gemini-3.5-flash-lite"
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
-// ~8-10 requests/minute is the conservative target from Google's docs for
-// free-tier rate limits (not a fixed published number). Each queue item
-// (one match) makes 2 calls (red + blue), so a 15s gap between matches
-// keeps steady-state throughput at ~8/min.
-const MATCH_DELAY_MS = 15_000
+// The Flash Lite free tier is 15 requests/minute; each queue item (one
+// match) makes 2 calls (red + blue), so a 10s gap keeps steady-state
+// throughput at ~12/min, leaving headroom under the limit.
+const MATCH_DELAY_MS = 10_000
 const BASE_BACKOFF_MS = 5_000
 const MAX_BACKOFF_MS = 5 * 60 * 1000
 
@@ -158,7 +163,9 @@ async function callGemini(prompt: string): Promise<GeminiTeamEstimate[]> {
   })
 
   if (res.status === 429) {
-    throw new GeminiRateLimitError("Gemini rate limit (429)")
+    const body = await res.text().catch(() => "")
+    console.error(`Gemini 429 body: ${body.slice(0, 500)}`)
+    throw new GeminiRateLimitError(`Gemini rate limit (429): ${body.slice(0, 300)}`)
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "")
