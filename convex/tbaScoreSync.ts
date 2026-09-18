@@ -168,9 +168,10 @@ export const applyScoreSync = internalMutation({
 
 // Full-detail match fetch (not /simple) is required because score_breakdown
 // -- the only source of FUEL data -- is omitted from the simple model. One
-// call per event covers every match, which is why this re-syncs all played
-// quals every run instead of tracking per-match sync state: at this app's
-// event scale that's simpler and just as cheap as a partial-sync design.
+// call per event covers every match (qual + playoff), which is why this
+// re-syncs every played match every run instead of tracking per-match sync
+// state: at this app's event scale that's simpler and just as cheap as a
+// partial-sync design.
 export const syncEventScores = action({
   args: { eventId: v.id("events") },
   handler: async (ctx, { eventId }): Promise<{ matchesSynced: number; matchesSkipped: number }> => {
@@ -187,7 +188,7 @@ export const syncEventScores = action({
     const tbaMatches = await tbaFetch<TbaMatchFull[]>(`/event/${event.tbaEventKey}/matches`)
 
     const playedQuals = tbaMatches.filter(
-      (m) => m.comp_level === "qm" && Boolean(m.actual_time) && m.score_breakdown !== null,
+      (m) => Boolean(m.actual_time) && m.score_breakdown !== null,
     )
 
     const updates = playedQuals.map((match) => {

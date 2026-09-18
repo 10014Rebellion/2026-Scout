@@ -31,7 +31,7 @@ function EventSetupForm() {
     try {
       const result = await importEvent({ tbaEventKey: tbaEventKey.trim() })
       toast.success(
-        `Imported ${result.teamCount} teams and ${result.matchCount} qualification matches`,
+        `Imported ${result.teamCount} teams and ${result.matchCount} matches (qual + playoff)`,
       )
       setTbaEventKey("")
     } catch (error) {
@@ -46,7 +46,7 @@ function EventSetupForm() {
       <div className="animate-stagger-in">
         <h1 className="text-2xl font-bold">Event Setup</h1>
         <p className="text-muted-foreground text-sm">
-          Import teams and qualification matches from The Blue Alliance.
+          Import teams and matches (qual + playoff) from The Blue Alliance.
         </p>
       </div>
 

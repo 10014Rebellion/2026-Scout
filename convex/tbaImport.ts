@@ -65,8 +65,8 @@ function teamNumberFromKey(teamKey: string) {
   return parseInt(teamKey.replace("frc", ""), 10)
 }
 
-// Imports event info, teams, and qualification matches from TBA. Does not
-// import rankings, EPA/OPR, awards, playoff matches, team colors, or
+// Imports event info, teams, and qual + playoff matches from TBA. Does not
+// import rankings (see syncEventRankings), EPA/OPR, awards, team colors, or
 // videos -- none of that is used anywhere in this app.
 export const importEvent = action({
   args: { tbaEventKey: v.string() },
@@ -83,8 +83,6 @@ export const importEvent = action({
     const tbaTeams = await tbaFetch<TbaTeamSimple[]>(`/event/${tbaEventKey}/teams/simple`)
     const tbaMatches = await tbaFetch<TbaMatchSimple[]>(`/event/${tbaEventKey}/matches/simple`)
 
-    const qualMatches = tbaMatches.filter((m) => m.comp_level === "qm")
-
     const eventId: Id<"events"> = await ctx.runMutation(internal.tbaImport.upsertEventData, {
       event: {
         tbaEventKey,
@@ -100,7 +98,7 @@ export const importEvent = action({
         stateProv: t.state_prov ?? undefined,
         country: t.country ?? undefined,
       })),
-      matches: qualMatches.map((m) => ({
+      matches: tbaMatches.map((m) => ({
         tbaMatchKey: m.key,
         compLevel: m.comp_level,
         matchNumber: m.match_number,
@@ -112,7 +110,7 @@ export const importEvent = action({
       })),
     })
 
-    return { eventId, teamCount: tbaTeams.length, matchCount: qualMatches.length }
+    return { eventId, teamCount: tbaTeams.length, matchCount: tbaMatches.length }
   },
 })
 
