@@ -228,7 +228,7 @@ function TeamCard({
 
       <p className="line-clamp-1 text-[0.7rem] text-muted-foreground/80">
         {prev
-          ? `Prev: ${prev.name}${prev.qualRank !== undefined ? ` — Rank ${prev.qualRank}${prev.qualNumTeams ? `/${prev.qualNumTeams}` : ""}` : ""}`
+          ? `Prev: ${prev.name}${prev.qualRank !== undefined ? ` — Rank ${prev.qualRank}${prev.qualNumTeams ? `/${prev.qualNumTeams}` : ""}` : ""}${prev.ace !== undefined ? ` · ACE ${prev.ace.toFixed(1)}` : ""}`
           : team.previousEventCheckedAt !== undefined
             ? "No prior event this season"
             : "Prior event: not yet checked"}

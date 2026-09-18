@@ -19,6 +19,35 @@ async function tbaFetch<T>(path: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
+const PEEKOROBO_BASE = "https://peekorobo-db-bec52087b7e6.herokuapp.com"
+
+// Verified live (2026-09-18) against a real team/event with data --
+// { team_number, event_key, raw, ace, confidence, auto_raw, teleop_raw,
+// endgame_raw }. "ace" is Peekorobo's own performance rating, distinct from
+// Statbotics' EPA -- a different number, always labeled "ACE (Peekorobo)"
+// in the UI. A 404 here just means Peekorobo has no data for this team at
+// this event (common for very new/small events) -- not an error.
+interface PeekoroboEventPerf {
+  ace: number | null
+  auto_raw: number | null
+  teleop_raw: number | null
+  endgame_raw: number | null
+}
+
+async function fetchPeekoroboAce(teamNumber: number, eventKey: string): Promise<PeekoroboEventPerf | null> {
+  const apiKey = process.env.PEEKOROBO_API_KEY
+  if (!apiKey) {
+    return null
+  }
+  const res = await fetch(`${PEEKOROBO_BASE}/event/${eventKey}/event_perfs/${teamNumber}`, {
+    headers: { "X-API-Key": apiKey },
+  })
+  if (!res.ok) {
+    return null
+  }
+  return res.json() as Promise<PeekoroboEventPerf>
+}
+
 interface TbaEventSimpleWithKey {
   key: string
   name: string
@@ -75,7 +104,7 @@ export const listTeamsForEvent = internalQuery({
       .query("teams")
       .withIndex("by_event", (q) => q.eq("eventId", eventId))
       .collect()
-    return teams.map((t) => ({ teamId: t._id, tbaTeamKey: t.tbaTeamKey }))
+    return teams.map((t) => ({ teamId: t._id, tbaTeamKey: t.tbaTeamKey, teamNumber: t.teamNumber }))
   },
 })
 
@@ -95,6 +124,10 @@ const previousEventValidator = v.object({
   playoffWins: v.optional(v.number()),
   playoffLosses: v.optional(v.number()),
   playoffTies: v.optional(v.number()),
+  ace: v.optional(v.number()),
+  aceAutoRaw: v.optional(v.number()),
+  aceTeleopRaw: v.optional(v.number()),
+  aceEndgameRaw: v.optional(v.number()),
 })
 
 export const applyPreviousEventData = internalMutation({
@@ -119,9 +152,11 @@ export const applyPreviousEventData = internalMutation({
 
 // For every team at the active event, finds their most recent OTHER
 // competition in the same season (strictly before this event's start date)
-// and snapshots its qual rank/record, alliance selection, and playoff
-// result. Two TBA calls per team (event list + statuses), run with limited
-// concurrency to keep this reasonably fast without hammering TBA's API.
+// and snapshots its qual rank/record, alliance selection, playoff result,
+// and (when Peekorobo has it) their ACE performance rating at that same
+// event. Three calls per team (TBA event list + statuses, then one
+// Peekorobo lookup once the prior event is known), run with limited
+// concurrency to keep this reasonably fast without hammering either API.
 export const syncPreviousEventInfo = action({
   args: { eventId: v.id("events") },
   handler: async (ctx, { eventId }): Promise<{ updated: number; withPreviousEvent: number; failed: number }> => {
@@ -135,7 +170,7 @@ export const syncPreviousEventInfo = action({
       throw new Error("Event not found")
     }
 
-    const teams: { teamId: Id<"teams">; tbaTeamKey: string }[] = await ctx.runQuery(
+    const teams: { teamId: Id<"teams">; tbaTeamKey: string; teamNumber: number }[] = await ctx.runQuery(
       internal.tbaPreviousEvent.listTeamsForEvent,
       { eventId },
     )
@@ -158,6 +193,8 @@ export const syncPreviousEventInfo = action({
         }
 
         const status: TbaTeamEventStatus | undefined = statuses[mostRecent.key]
+        const ace = await fetchPeekoroboAce(team.teamNumber, mostRecent.key)
+
         return {
           teamId: team.teamId,
           previousEvent: {
@@ -176,6 +213,10 @@ export const syncPreviousEventInfo = action({
             playoffWins: status?.playoff?.record?.wins ?? undefined,
             playoffLosses: status?.playoff?.record?.losses ?? undefined,
             playoffTies: status?.playoff?.record?.ties ?? undefined,
+            ace: ace?.ace ?? undefined,
+            aceAutoRaw: ace?.auto_raw ?? undefined,
+            aceTeleopRaw: ace?.teleop_raw ?? undefined,
+            aceEndgameRaw: ace?.endgame_raw ?? undefined,
           },
         }
       } catch {

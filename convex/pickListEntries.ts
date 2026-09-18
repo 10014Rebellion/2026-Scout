@@ -151,6 +151,7 @@ export const boardForOwner = query({
           avgDriverRating,
           avgEstimatedScore,
           record,
+          previousEventAce: team.previousEvent?.ace,
         }
       }),
     )

@@ -156,6 +156,22 @@ export function TeamDetailDialog({
                     </span>
                   </div>
                 )}
+                {team.previousEvent.ace !== undefined && (
+                  <div className="flex flex-col">
+                    <span className="font-mono text-base font-semibold">{team.previousEvent.ace.toFixed(1)}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ACE (Peekorobo)
+                      {team.previousEvent.aceAutoRaw !== undefined && (
+                        <>
+                          {" "}
+                          &middot; Auto {team.previousEvent.aceAutoRaw.toFixed(1)} &middot; Teleop{" "}
+                          {team.previousEvent.aceTeleopRaw?.toFixed(1)} &middot; Endgame{" "}
+                          {team.previousEvent.aceEndgameRaw?.toFixed(1)}
+                        </>
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
               {formatPlayoffResult(team.previousEvent.playoffLevel, team.previousEvent.playoffStatus) && (
                 <p className="text-muted-foreground">

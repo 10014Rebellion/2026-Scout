@@ -84,6 +84,14 @@ export default defineSchema({
         playoffWins: v.optional(v.number()),
         playoffLosses: v.optional(v.number()),
         playoffTies: v.optional(v.number()),
+        // Peekorobo's ACE metric (their own performance rating, distinct
+        // from Statbotics' EPA -- not the same number, so always labeled
+        // "ACE (Peekorobo)" in the UI, never "EPA"), as of this same prior
+        // event. Absent when Peekorobo has no data for this team/event.
+        ace: v.optional(v.number()),
+        aceAutoRaw: v.optional(v.number()),
+        aceTeleopRaw: v.optional(v.number()),
+        aceEndgameRaw: v.optional(v.number()),
       }),
     ),
   })
