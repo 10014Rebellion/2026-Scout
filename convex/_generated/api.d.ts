@@ -14,6 +14,7 @@ import type * as dataExport from "../dataExport.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as matchReports from "../matchReports.js";
+import type * as matchStats from "../matchStats.js";
 import type * as matches from "../matches.js";
 import type * as mockData from "../mockData.js";
 import type * as pickListEntries from "../pickListEntries.js";
@@ -39,6 +40,7 @@ declare const fullApi: ApiFromModules<{
   events: typeof events;
   http: typeof http;
   matchReports: typeof matchReports;
+  matchStats: typeof matchStats;
   matches: typeof matches;
   mockData: typeof mockData;
   pickListEntries: typeof pickListEntries;

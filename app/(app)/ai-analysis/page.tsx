@@ -10,7 +10,9 @@ import { useRole } from "@/lib/use-role"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ConfidenceBadge, CLIMB_LABEL, type Confidence } from "@/components/confidence-badge"
+import { MatchStatsTable } from "@/components/match-stats-table"
 
 export default function AiAnalysisPage() {
   const role = useRole()
@@ -20,9 +22,10 @@ export default function AiAnalysisPage() {
     api.aiAnalysis.listTeamSummaries,
     activeEvent ? { eventId: activeEvent._id } : "skip",
   )
+  const [view, setView] = useState<"team" | "match">("team")
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6 p-6 md:p-10">
+    <div className="mx-auto flex max-w-6xl flex-col gap-6 p-6 md:p-10">
       <div className="animate-stagger-in flex items-center gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
           <Sparkles className="size-5" />
@@ -46,8 +49,16 @@ export default function AiAnalysisPage() {
       )}
 
       {activeEvent && (
+        <Tabs value={view} onValueChange={(v) => setView(v as "team" | "match")} className="animate-stagger-in">
+          <TabsList>
+            <TabsTrigger value="team">Team estimates</TabsTrigger>
+            <TabsTrigger value="match">Match-by-match</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
+
+      {activeEvent && view === "team" && (
         <div className="animate-stagger-in flex flex-col gap-3">
-          <h2 className="text-lg font-semibold">Team estimates</h2>
           {teamSummaries === undefined && (
             <p className="text-sm text-muted-foreground">Loading...</p>
           )}
@@ -57,6 +68,12 @@ export default function AiAnalysisPage() {
           <div className="flex flex-col gap-2">
             {teamSummaries?.map((row) => <TeamRow key={row.team._id} row={row} />)}
           </div>
+        </div>
+      )}
+
+      {activeEvent && view === "match" && (
+        <div className="animate-stagger-in">
+          <MatchStatsTable eventId={activeEvent._id} />
         </div>
       )}
     </div>
