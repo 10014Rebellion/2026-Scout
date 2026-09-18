@@ -7,11 +7,10 @@ import {
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
-  closestCorners,
+  rectIntersection,
   useSensor,
   useSensors,
   type DragEndEvent,
-  type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core"
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
@@ -97,32 +96,18 @@ export function PickListBoard({
     setDraggingTeamId(String(event.active.id))
   }
 
-  function handleDragOver(event: DragOverEvent) {
-    const { active, over } = event
-    if (!over) return
-    const draggedId = String(active.id)
-    const overId = String(over.id)
-    if (draggedId === overId) return
-
-    const sourceTier = findColumnOfCard(columns, draggedId)
-    const targetTier = (TIER_ORDER as readonly string[]).includes(overId)
-      ? (overId as TierValue)
-      : findColumnOfCard(columns, overId)
-    if (!sourceTier || !targetTier || sourceTier === targetTier) return
-
-    setColumns((prev) => {
-      const sourceCards = [...prev[sourceTier]]
-      const cardIndex = sourceCards.findIndex((c) => c.teamId === draggedId)
-      if (cardIndex === -1) return prev
-      const [movedCard] = sourceCards.splice(cardIndex, 1)
-      const targetCards = [...prev[targetTier]]
-      const overIndex = targetCards.findIndex((c) => c.teamId === overId)
-      const insertAt = overIndex === -1 ? targetCards.length : overIndex
-      targetCards.splice(insertAt, 0, { ...movedCard, tier: targetTier })
-      return { ...prev, [sourceTier]: sourceCards, [targetTier]: targetCards }
-    })
-  }
-
+  // The move is computed entirely here, once, against the untouched
+  // pre-drag `columns` -- not built up incrementally during the drag via
+  // onDragOver. An earlier version reparented the dragged card between
+  // columns live as the pointer crossed each boundary (moving it between
+  // separate per-column SortableContext parents), which unmounts and
+  // remounts its DOM node mid-gesture. That broke dnd-kit's pointer
+  // capture on the original node: confirmed live (with real dispatched
+  // PointerEvents, ruling out a test-harness artifact) that the drag would
+  // reliably freeze -- both visually and functionally -- immediately after
+  // the first successful cross-column move, every single time. Only
+  // computing the result at drop time sidesteps the whole class of bug:
+  // nothing reparents until the gesture is already over.
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     setActiveId(null)
@@ -132,40 +117,41 @@ export function PickListBoard({
 
     const activeCardId = String(active.id)
     const overId = String(over.id)
+    if (activeCardId === overId) return
 
-    const sourceTierBeforeDrag = findColumnOfCard(boardData as BoardColumns ?? EMPTY_COLUMNS, activeCardId)
-    const finalTier = findColumnOfCard(columns, activeCardId)
-    if (!finalTier) return
+    const sourceTier = findColumnOfCard(columns, activeCardId)
+    if (!sourceTier) return
+    const targetTier = (TIER_ORDER as readonly string[]).includes(overId)
+      ? (overId as TierValue)
+      : findColumnOfCard(columns, overId)
+    if (!targetTier) return
 
-    let finalColumns = columns
-    if (activeCardId !== overId) {
-      const overTier = (TIER_ORDER as readonly string[]).includes(overId)
-        ? (overId as TierValue)
-        : findColumnOfCard(columns, overId)
-      if (overTier === finalTier) {
-        const cards = [...columns[finalTier]]
-        const oldIndex = cards.findIndex((c) => c.teamId === activeCardId)
-        const newIndex = cards.findIndex((c) => c.teamId === overId)
-        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-          const [moved] = cards.splice(oldIndex, 1)
-          cards.splice(newIndex, 0, moved)
-          finalColumns = { ...columns, [finalTier]: cards }
-          setColumns(finalColumns)
-        }
-      }
-    }
+    const sourceCards = [...columns[sourceTier]]
+    const cardIndex = sourceCards.findIndex((c) => c.teamId === activeCardId)
+    if (cardIndex === -1) return
+    const [movedCard] = sourceCards.splice(cardIndex, 1)
 
-    const destOrderedTeamIds = finalColumns[finalTier].map((c) => c.teamId)
-    const sourceTier =
-      sourceTierBeforeDrag && sourceTierBeforeDrag !== finalTier ? sourceTierBeforeDrag : undefined
-    const sourceOrderedTeamIds = sourceTier ? finalColumns[sourceTier].map((c) => c.teamId) : undefined
+    const targetCards = sourceTier === targetTier ? sourceCards : [...columns[targetTier]]
+    const overIndex = targetCards.findIndex((c) => c.teamId === overId)
+    const insertAt = overIndex === -1 ? targetCards.length : overIndex
+    targetCards.splice(insertAt, 0, { ...movedCard, tier: targetTier })
+
+    const finalColumns: BoardColumns =
+      sourceTier === targetTier
+        ? { ...columns, [targetTier]: targetCards }
+        : { ...columns, [sourceTier]: sourceCards, [targetTier]: targetCards }
+
+    setColumns(finalColumns)
+
+    const destOrderedTeamIds = finalColumns[targetTier].map((c) => c.teamId)
+    const sourceOrderedTeamIds = sourceTier !== targetTier ? finalColumns[sourceTier].map((c) => c.teamId) : undefined
 
     try {
       await moveCard({
         ownerId,
-        destTier: finalTier,
+        destTier: targetTier,
         destOrderedTeamIds,
-        sourceTier,
+        sourceTier: sourceTier !== targetTier ? sourceTier : undefined,
         sourceOrderedTeamIds,
       })
     } catch (error) {
@@ -177,9 +163,8 @@ export function PickListBoard({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={rectIntersection}
       onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-5">
