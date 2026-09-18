@@ -129,6 +129,7 @@ export const submit = mutation({
     rationale: rationaleValidator,
     notes: v.optional(v.string()),
     submittedAt: v.number(),
+    isMockData: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { matchId, teamId, ...rest } = args

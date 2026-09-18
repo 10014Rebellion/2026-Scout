@@ -98,6 +98,7 @@ export const submit = mutation({
     climbConsistency: v.optional(climbConsistencyValidator),
     notes: v.optional(v.string()),
     submittedAt: v.number(),
+    isMockData: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { teamId, ...rest } = args

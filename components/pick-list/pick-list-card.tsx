@@ -49,8 +49,16 @@ export function PickListCardTile({
       )}
     >
       <div className="flex items-baseline justify-between gap-2">
-        <span className="font-mono text-base font-bold leading-none">
+        <span className="flex items-center gap-1.5 font-mono text-base font-bold leading-none">
           {card.teamNumber}
+          {card.hasMockData && (
+            <span
+              className="rounded-full bg-warning px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase leading-none tracking-wide text-warning-foreground"
+              title="This team has mock/test scouting data"
+            >
+              Test
+            </span>
+          )}
         </span>
         {card.pitScouted ? (
           <CheckCircle2 className="size-3.5 shrink-0 text-muted-foreground" aria-label="Pit scouted" />

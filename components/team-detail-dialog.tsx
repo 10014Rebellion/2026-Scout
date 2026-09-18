@@ -26,6 +26,14 @@ const SLIDER_LABELS: Record<string, string> = {
 
 const CLIMB_VALUE: Record<string, number> = { none: 0, level1: 1, level2: 2, level3: 3 }
 
+function MockDataBadge() {
+  return (
+    <span className="rounded-full bg-warning px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning-foreground">
+      Test data
+    </span>
+  )
+}
+
 function average(values: number[]) {
   if (values.length === 0) return null
   return values.reduce((sum, v) => sum + v, 0) / values.length
@@ -114,7 +122,7 @@ export function TeamDetailDialog({
 
         <Separator />
 
-        <Section title="Pit scouting">
+        <Section title="Pit scouting" badge={pitReport?.isMockData ? <MockDataBadge /> : null}>
           {pitReport === undefined && <Loading />}
           {pitReport === null && <Empty text="Not yet pit scouted." />}
           {pitReport && (
@@ -163,8 +171,9 @@ export function TeamDetailDialog({
           <div className="flex flex-col gap-2">
             {matchReports?.map(({ report, match }) => (
               <div key={report._id} className="rounded-md border border-border p-2.5 text-xs">
-                <p className="mb-1.5 font-mono font-semibold text-foreground">
+                <p className="mb-1.5 flex items-center gap-2 font-mono font-semibold text-foreground">
                   {match ? `${match.compLevel}${match.matchNumber}` : "Unknown match"}
+                  {report.isMockData && <MockDataBadge />}
                 </p>
                 <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                   {Object.entries(report.sliders).map(([key, value]) => (
@@ -184,10 +193,21 @@ export function TeamDetailDialog({
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  badge,
+  children,
+}: {
+  title: string
+  badge?: React.ReactNode
+  children: React.ReactNode
+}) {
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold">{title}</h3>
+      <h3 className="flex items-center gap-2 text-sm font-semibold">
+        {title}
+        {badge}
+      </h3>
       {children}
     </div>
   )

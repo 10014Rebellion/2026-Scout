@@ -15,6 +15,7 @@ import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as matchReports from "../matchReports.js";
 import type * as matches from "../matches.js";
+import type * as mockData from "../mockData.js";
 import type * as pickListEntries from "../pickListEntries.js";
 import type * as pickListMerges from "../pickListMerges.js";
 import type * as pitReports from "../pitReports.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   matchReports: typeof matchReports;
   matches: typeof matches;
+  mockData: typeof mockData;
   pickListEntries: typeof pickListEntries;
   pickListMerges: typeof pickListMerges;
   pitReports: typeof pitReports;

@@ -118,6 +118,8 @@ export const boardForOwner = query({
           matchReports.map((r) => r.sliders.driverSkill),
         )
 
+        const hasMockData = Boolean(pitReport?.isMockData) || matchReports.some((r) => r.isMockData)
+
         const avgEstimatedScore = aiSummary
           ? aiSummary.avgAutoFuelPoints + aiSummary.avgTeleopFuelPoints
           : null
@@ -145,6 +147,7 @@ export const boardForOwner = query({
           position: entry?.position ?? 1_000_000 + index,
           hasEntry: entry !== null,
           pitScouted: pitReport !== null,
+          hasMockData,
           avgDriverRating,
           avgEstimatedScore,
           record,

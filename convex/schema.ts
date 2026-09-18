@@ -151,6 +151,10 @@ export default defineSchema({
     ),
     notes: v.optional(v.string()),
     submittedAt: v.number(),
+    // True only for reports created by the admin "generate test data" tool.
+    // Never set by the real scouting forms. Lets the UI badge mock data and
+    // lets it all be wiped in one pass without touching real submissions.
+    isMockData: v.optional(v.boolean()),
   }).index("by_team", ["teamId"]),
 
   matchReports: defineTable({
@@ -177,6 +181,8 @@ export default defineSchema({
     }),
     notes: v.optional(v.string()),
     submittedAt: v.number(),
+    // See pitReports.isMockData -- same purpose, same rule (real forms never set it).
+    isMockData: v.optional(v.boolean()),
   })
     .index("by_match", ["matchId"])
     .index("by_team", ["teamId"])

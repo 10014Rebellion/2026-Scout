@@ -26,6 +26,7 @@ export interface PickListCard {
   position: number
   hasEntry: boolean
   pitScouted: boolean
+  hasMockData: boolean
   avgDriverRating: number | null
   avgEstimatedScore: number | null
   record: { wins: number; losses: number; ties: number } | null
