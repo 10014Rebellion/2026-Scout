@@ -62,7 +62,9 @@ export const generateForActiveEvent = mutation({
       .query("scouts")
       .withIndex("by_name", (q) => q.eq("name", MOCK_SCOUT_NAME))
       .unique()
-    const mockScoutId = mockScout ? mockScout._id : await ctx.db.insert("scouts", { name: MOCK_SCOUT_NAME })
+    const mockScoutId = mockScout
+      ? mockScout._id
+      : await ctx.db.insert("scouts", { name: MOCK_SCOUT_NAME, isMockScout: true })
 
     const teams = await ctx.db
       .query("teams")
@@ -165,7 +167,8 @@ export const generateForActiveEvent = mutation({
   },
 })
 
-// Deletes every mock-flagged pit/match report in the given event. Never
+// Deletes every mock-flagged pit/match report in the given event, plus the
+// placeholder mock scout itself once it no longer owns anything. Never
 // touches a real report, even for a team that also has mock rows.
 export const clearForEvent = mutation({
   args: { eventId: v.id("events") },
@@ -196,6 +199,26 @@ export const clearForEvent = mutation({
           await ctx.db.delete(report._id)
           deleted++
         }
+      }
+    }
+
+    // The mock scout is shared across every event (scouts aren't event-
+    // scoped), so only remove it once it owns nothing anywhere -- otherwise
+    // clearing THIS event's mock data would dangle another event's rows.
+    const mockScout = await ctx.db
+      .query("scouts")
+      .withIndex("by_name", (q) => q.eq("name", MOCK_SCOUT_NAME))
+      .unique()
+    if (mockScout) {
+      const [allPitReports, allMatchReports] = await Promise.all([
+        ctx.db.query("pitReports").collect(),
+        ctx.db.query("matchReports").collect(),
+      ])
+      const stillOwnsData =
+        allPitReports.some((r) => r.scoutId === mockScout._id) ||
+        allMatchReports.some((r) => r.scoutId === mockScout._id)
+      if (!stillOwnsData) {
+        await ctx.db.delete(mockScout._id)
       }
     }
 

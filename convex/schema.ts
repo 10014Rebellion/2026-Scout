@@ -26,6 +26,11 @@ export default defineSchema({
   // a client-side name picker on top of the shared "scout" PIN session.
   scouts: defineTable({
     name: v.string(),
+    // True only for the placeholder scout the mock-data generator creates
+    // to own its fabricated reports. Filtered out of every real, human-
+    // facing scout list (identity picker, scout assignment) so it can
+    // never be confused with, or accidentally assigned as, a real person.
+    isMockScout: v.optional(v.boolean()),
   }).index("by_name", ["name"]),
 
   events: defineTable({

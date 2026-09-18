@@ -2,11 +2,13 @@ import { v } from "convex/values"
 import { mutation, query } from "./_generated/server"
 import { requireAdmin } from "./auth"
 
+// Real, human scouts only -- never the placeholder scout the mock-data
+// generator creates to own its fabricated reports.
 export const list = query({
   args: {},
   handler: async (ctx) => {
     const scouts = await ctx.db.query("scouts").collect()
-    return scouts.sort((a, b) => a.name.localeCompare(b.name))
+    return scouts.filter((s) => !s.isMockScout).sort((a, b) => a.name.localeCompare(b.name))
   },
 })
 
