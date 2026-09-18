@@ -58,6 +58,7 @@ function resultClass(result: MatchStatRow["result"]) {
 export function MatchStatsTable({ eventId }: { eventId: Id<"events"> }) {
   const rows = useQuery(api.matchStats.listForEvent, { eventId })
   const [teamFilter, setTeamFilter] = useState("")
+  const [matchSearch, setMatchSearch] = useState("")
   const [allianceFilter, setAllianceFilter] = useState<AllianceFilter>("all")
   const [roundFilter, setRoundFilter] = useState<RoundFilter>("all")
   const [sortKey, setSortKey] = useState<SortKey>("match")
@@ -66,8 +67,10 @@ export function MatchStatsTable({ eventId }: { eventId: Id<"events"> }) {
   const filtered = useMemo(() => {
     if (!rows) return []
     const trimmedTeam = teamFilter.trim()
+    const trimmedMatch = matchSearch.trim().toLowerCase().replace(/\s+/g, "")
     let result = rows.filter((row) => {
       if (trimmedTeam && !String(row.teamNumber).includes(trimmedTeam)) return false
+      if (trimmedMatch && !matchLabel(row).toLowerCase().replace(/\s+/g, "").includes(trimmedMatch)) return false
       if (allianceFilter !== "all" && row.alliance !== allianceFilter) return false
       if (roundFilter === "qual" && row.compLevel !== "qm") return false
       if (roundFilter === "playoff" && row.compLevel === "qm") return false
@@ -91,7 +94,7 @@ export function MatchStatsTable({ eventId }: { eventId: Id<"events"> }) {
     if (sortKey === "match" && sortDir === "desc") result.reverse()
 
     return result
-  }, [rows, teamFilter, allianceFilter, roundFilter, sortKey, sortDir])
+  }, [rows, teamFilter, matchSearch, allianceFilter, roundFilter, sortKey, sortDir])
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -113,6 +116,12 @@ export function MatchStatsTable({ eventId }: { eventId: Id<"events"> }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
+        <Input
+          placeholder="Search match (e.g. Q12, SF1)"
+          value={matchSearch}
+          onChange={(e) => setMatchSearch(e.target.value)}
+          className="h-8 w-48"
+        />
         <Input
           placeholder="Filter by team #"
           value={teamFilter}
