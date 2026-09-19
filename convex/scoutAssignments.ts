@@ -16,10 +16,17 @@ export const listForEvent = query({
           .withIndex("by_team", (q) => q.eq("teamId", team._id))
           .unique()
         const scout = assignment ? await ctx.db.get(assignment.scoutId) : null
+        // A scoutId that no longer resolves to a real, non-mock scout (the
+        // scout was removed, or -- the one path that could still produce
+        // this -- a mock scout got assigned and was later cleaned up) is
+        // surfaced as unassigned rather than a label-less raw id, which is
+        // all the real "who are you" scout list (scouts.list) can map it
+        // to.
+        const isValidRealScout = scout !== null && !scout.isMockScout
         return {
           team,
-          scoutId: assignment?.scoutId ?? null,
-          scoutName: scout?.name ?? null,
+          scoutId: isValidRealScout ? assignment!.scoutId : null,
+          scoutName: isValidRealScout ? scout.name : null,
         }
       }),
     )
@@ -67,8 +74,11 @@ export const reassignTeam = mutation({
   },
 })
 
-// Evenly splits every team in the event across all scouts (round-robin by
-// team number), overwriting any existing assignments.
+// Evenly splits every team in the event across all REAL scouts (round-robin
+// by team number), overwriting any existing assignments. Excludes the
+// mock-data placeholder scout -- it's not a person and assigning it a real
+// team produces a "ghost" entry once mockData.clearForEvent later removes
+// it (the assignment outlives it, pointing at nothing).
 export const rebalance = mutation({
   args: { eventId: v.id("events") },
   handler: async (ctx, { eventId }) => {
@@ -77,7 +87,7 @@ export const rebalance = mutation({
       .query("teams")
       .withIndex("by_event", (q) => q.eq("eventId", eventId))
       .collect()
-    const scouts = await ctx.db.query("scouts").collect()
+    const scouts = (await ctx.db.query("scouts").collect()).filter((s) => !s.isMockScout)
     if (scouts.length === 0) {
       throw new Error("Add at least one scout before rebalancing")
     }

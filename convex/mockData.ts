@@ -205,18 +205,28 @@ export const clearForEvent = mutation({
     // The mock scout is shared across every event (scouts aren't event-
     // scoped), so only remove it once it owns nothing anywhere -- otherwise
     // clearing THIS event's mock data would dangle another event's rows.
+    // Also checked against scoutAssignments: rebalance() now excludes the
+    // mock scout from its pool, but this stays as a second line of defense
+    // so deleting it can never leave a scoutAssignments row pointing at a
+    // now-nonexistent scout (which would show up as an unlabeled "ghost"
+    // entry on the Scout Assignment page).
     const mockScout = await ctx.db
       .query("scouts")
       .withIndex("by_name", (q) => q.eq("name", MOCK_SCOUT_NAME))
       .unique()
     if (mockScout) {
-      const [allPitReports, allMatchReports] = await Promise.all([
+      const [allPitReports, allMatchReports, ownedAssignments] = await Promise.all([
         ctx.db.query("pitReports").collect(),
         ctx.db.query("matchReports").collect(),
+        ctx.db
+          .query("scoutAssignments")
+          .withIndex("by_scout", (q) => q.eq("scoutId", mockScout._id))
+          .collect(),
       ])
       const stillOwnsData =
         allPitReports.some((r) => r.scoutId === mockScout._id) ||
-        allMatchReports.some((r) => r.scoutId === mockScout._id)
+        allMatchReports.some((r) => r.scoutId === mockScout._id) ||
+        ownedAssignments.length > 0
       if (!stillOwnsData) {
         await ctx.db.delete(mockScout._id)
       }
