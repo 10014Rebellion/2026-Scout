@@ -13,6 +13,7 @@ import type * as auth from "../auth.js";
 import type * as dataExport from "../dataExport.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";
+import type * as manualImport from "../manualImport.js";
 import type * as matchReports from "../matchReports.js";
 import type * as matchStats from "../matchStats.js";
 import type * as matches from "../matches.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   dataExport: typeof dataExport;
   events: typeof events;
   http: typeof http;
+  manualImport: typeof manualImport;
   matchReports: typeof matchReports;
   matchStats: typeof matchStats;
   matches: typeof matches;

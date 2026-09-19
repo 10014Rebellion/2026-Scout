@@ -40,6 +40,12 @@ export default defineSchema({
     endDate: v.string(),
     imported: v.boolean(),
     importedAt: v.optional(v.number()),
+    // True for an event created via manual CSV import (TBA down), never set
+    // by the real TBA importer. tbaEventKey for a manual event is a
+    // synthesized "manual-..." placeholder, not a real TBA key, until
+    // manualImport.reconcileWithTba patches it (and clears this flag) once
+    // TBA is back.
+    isManual: v.optional(v.boolean()),
   }).index("by_tbaEventKey", ["tbaEventKey"]),
 
   teams: defineTable({
