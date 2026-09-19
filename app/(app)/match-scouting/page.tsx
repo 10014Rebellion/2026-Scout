@@ -87,7 +87,7 @@ function MatchCard({
   index,
 }: {
   item: {
-    match: { _id: string; compLevel: string; matchNumber: number; hasBeenPlayed: boolean }
+    match: { _id: string; compLevel: string; matchNumber: number }
     team: { _id: string; teamNumber: number }
     alliance: string
     hasReport: boolean
@@ -95,15 +95,13 @@ function MatchCard({
   }
   index: number
 }) {
-  const isReady = item.match.hasBeenPlayed || item.hasReport
+  // Always tappable, regardless of whether TBA has confirmed the match as
+  // played. A scout watching live IS the authoritative source for "did
+  // this match happen" -- gating on match.hasBeenPlayed (only ever set by
+  // a TBA score sync) meant nothing could be reported until TBA caught up,
+  // and never at all for a manually-imported event with no TBA connection.
   const content = (
-    <div
-      className={cn(
-        "panel-depth flex min-h-16 items-center justify-between gap-3 rounded-lg border border-border p-4",
-        isReady && "active:scale-[0.98]",
-        !isReady && "opacity-60",
-      )}
-    >
+    <div className="panel-depth flex min-h-16 items-center justify-between gap-3 rounded-lg border border-border p-4 active:scale-[0.98]">
       <div className="flex items-center gap-3">
         <FlagTriangleRight
           className={cn(
@@ -129,20 +127,14 @@ function MatchCard({
       {item.hasReport ? (
         <CheckCircle2 className="size-5 shrink-0 text-primary" />
       ) : (
-        <span className="shrink-0 text-xs text-muted-foreground">
-          {isReady ? "Ready to report" : "Not yet played"}
-        </span>
+        <span className="shrink-0 text-xs text-muted-foreground">Ready to report</span>
       )}
     </div>
   )
 
   return (
     <div className="animate-stagger-in" style={{ animationDelay: `${Math.min(index, 20) * 25}ms` }}>
-      {isReady ? (
-        <Link href={`/match-scouting/${item.match._id}/${item.team._id}`}>{content}</Link>
-      ) : (
-        content
-      )}
+      <Link href={`/match-scouting/${item.match._id}/${item.team._id}`}>{content}</Link>
     </div>
   )
 }
