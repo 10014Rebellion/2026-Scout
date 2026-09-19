@@ -154,20 +154,30 @@ export default defineSchema({
     .index("by_team", ["teamId"])
     .index("by_scout", ["scoutId"]),
 
-  // Classical position-based scouting: a scout permanently owns one of the
-  // 6 field positions (e.g. "Red 2") for the whole event, rather than one
-  // specific team. Which team occupies that position changes every match --
-  // the actual team to scout is looked up per match at read time (see
-  // matchReports.dashboardForScout), never stored here. This is an
+  // Classical position-based scouting: a scout owns one of the 6 field
+  // positions (e.g. "Red 2") for a RANGE of qualification match numbers,
+  // rather than one specific team for the whole event. Which team occupies
+  // that position changes every match -- the actual team to scout is looked
+  // up per match at read time (see matchReports.dashboardForScout), never
+  // stored here. Multiple rows can exist for the same (event, alliance,
+  // position) as long as their [startMatchNumber, endMatchNumber] ranges
+  // don't overlap, so a seat can rotate between scouts over the course of
+  // an event (enforced at mutation time in scoutPositionAssignments.ts, the
+  // same way scoutAssignments enforces one-row-per-team). This is an
   // alternative to scoutAssignments, not a replacement: the two can be used
   // side by side, since a team-based scout can never end up double-booked
   // across two teams sharing a match, and neither can a position-based one
-  // (they only ever watch one seat per match, by construction).
+  // (they only ever watch one seat per match, by construction). Scoped to
+  // qualification matches only -- playoff scheduling doesn't have stable
+  // "ranges" the same way, and alliance selection has already happened by
+  // then.
   scoutPositionAssignments: defineTable({
     eventId: v.id("events"),
     alliance: v.union(v.literal("red"), v.literal("blue")),
     position: v.number(), // 1, 2, or 3 -- index into redTeamNumbers/blueTeamNumbers
     scoutId: v.id("scouts"),
+    startMatchNumber: v.number(), // inclusive, qualification match number
+    endMatchNumber: v.number(), // inclusive, qualification match number
     assignedAt: v.number(),
   })
     .index("by_event", ["eventId"])

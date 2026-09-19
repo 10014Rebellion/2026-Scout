@@ -9,9 +9,11 @@ export function positionLabel(alliance: "red" | "blue", position: number) {
   return `${alliance === "red" ? "Red" : "Blue"} ${position}`
 }
 
-// All 6 field-position slots for the event, with whichever scout (if any)
-// owns each one. Always returns exactly 6 rows, in a fixed order, so the
-// admin UI can render a stable grid even before anything's been assigned.
+// All 6 field-position slots for the event, each with its list of
+// qual-match-range assignments (a seat can rotate between several scouts
+// over the course of an event). Always returns exactly 6 rows, in a fixed
+// order, even for seats with zero ranges, so the admin UI can render a
+// stable grid.
 export const listForEvent = query({
   args: { eventId: v.id("events") },
   handler: async (ctx, { eventId }) => {
@@ -23,44 +25,86 @@ export const listForEvent = query({
     const rows = []
     for (const alliance of ALLIANCES as readonly ("red" | "blue")[]) {
       for (const position of POSITIONS) {
-        const assignment = assignments.find((a) => a.alliance === alliance && a.position === position)
-        const scout = assignment ? await ctx.db.get(assignment.scoutId) : null
-        const isValidRealScout = scout !== null && !scout.isMockScout
-        rows.push({
-          alliance,
-          position,
-          label: positionLabel(alliance, position),
-          scoutId: isValidRealScout ? assignment!.scoutId : null,
-          scoutName: isValidRealScout ? scout.name : null,
-        })
+        const seatAssignments = assignments
+          .filter((a) => a.alliance === alliance && a.position === position)
+          .sort((a, b) => a.startMatchNumber - b.startMatchNumber)
+
+        const ranges = await Promise.all(
+          seatAssignments.map(async (a) => {
+            const scout = await ctx.db.get(a.scoutId)
+            const isValidRealScout = scout !== null && !scout.isMockScout
+            return {
+              _id: a._id,
+              startMatchNumber: a.startMatchNumber,
+              endMatchNumber: a.endMatchNumber,
+              scoutId: isValidRealScout ? a.scoutId : null,
+              scoutName: isValidRealScout ? scout.name : "(removed scout)",
+            }
+          }),
+        )
+
+        rows.push({ alliance, position, label: positionLabel(alliance, position), ranges })
       }
     }
     return rows
   },
 })
 
-// Upsert by (eventId, alliance, position) -- one scout per slot, enforced
-// at mutation time the same way scoutAssignments.reassignTeam enforces one
-// scout per team.
-export const assignPosition = mutation({
+function rangesOverlap(aStart: number, aEnd: number, bStart: number, bEnd: number) {
+  return aStart <= bEnd && bStart <= aEnd
+}
+
+// Adds one match-range assignment to a seat. Rejects a range that overlaps
+// an existing one for the same seat -- a match must have exactly one scout
+// watching a given seat, never zero-vs-ambiguous or two-at-once.
+export const addPositionRange = mutation({
   args: {
     eventId: v.id("events"),
     alliance: v.union(v.literal("red"), v.literal("blue")),
     position: v.number(),
     scoutId: v.id("scouts"),
+    startMatchNumber: v.number(),
+    endMatchNumber: v.number(),
   },
-  handler: async (ctx, { eventId, alliance, position, scoutId }) => {
+  handler: async (ctx, { eventId, alliance, position, scoutId, startMatchNumber, endMatchNumber }) => {
     await requireAdmin(ctx)
+
+    if (startMatchNumber < 1 || endMatchNumber < startMatchNumber) {
+      throw new Error("Invalid match range")
+    }
+
     const existing = await ctx.db
       .query("scoutPositionAssignments")
       .withIndex("by_event_alliance_position", (q) =>
         q.eq("eventId", eventId).eq("alliance", alliance).eq("position", position),
       )
-      .unique()
-    if (existing) {
-      await ctx.db.patch(existing._id, { scoutId, assignedAt: Date.now() })
-    } else {
-      await ctx.db.insert("scoutPositionAssignments", { eventId, alliance, position, scoutId, assignedAt: Date.now() })
+      .collect()
+
+    const conflict = existing.find((a) =>
+      rangesOverlap(startMatchNumber, endMatchNumber, a.startMatchNumber, a.endMatchNumber),
+    )
+    if (conflict) {
+      throw new Error(
+        `Matches ${conflict.startMatchNumber}-${conflict.endMatchNumber} on this seat are already assigned`,
+      )
     }
+
+    await ctx.db.insert("scoutPositionAssignments", {
+      eventId,
+      alliance,
+      position,
+      scoutId,
+      startMatchNumber,
+      endMatchNumber,
+      assignedAt: Date.now(),
+    })
+  },
+})
+
+export const removePositionRange = mutation({
+  args: { assignmentId: v.id("scoutPositionAssignments") },
+  handler: async (ctx, { assignmentId }) => {
+    await requireAdmin(ctx)
+    await ctx.db.delete(assignmentId)
   },
 })

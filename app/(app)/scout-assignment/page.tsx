@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useMutation, useQuery } from "convex/react"
+import type { FunctionReturnType } from "convex/server"
 import { toast } from "sonner"
 import { api } from "@/convex/_generated/api"
 import { Id } from "@/convex/_generated/dataModel"
@@ -40,7 +41,6 @@ function ScoutAssignmentContent() {
   const removeScout = useMutation(api.scouts.remove)
   const rebalance = useMutation(api.scoutAssignments.rebalance)
   const reassignTeam = useMutation(api.scoutAssignments.reassignTeam)
-  const assignPosition = useMutation(api.scoutPositionAssignments.assignPosition)
 
   const [newScoutName, setNewScoutName] = useState("")
   const [isRebalancing, setIsRebalancing] = useState(false)
@@ -129,50 +129,21 @@ function ScoutAssignmentContent() {
         <div>
           <h2 className="text-sm font-medium">Position assignments (classical scouting)</h2>
           <p className="text-xs text-muted-foreground">
-            An alternative to assigning specific teams: a scout permanently owns a field
-            position (e.g. Red 2) for the whole event, and gets told which team occupies
-            that seat fresh for each match. Use this instead of team assignments, or leave
+            An alternative to assigning specific teams: a scout owns a field position (e.g.
+            Red 2) for a range of qualification matches, and gets told which team occupies
+            that seat fresh for each match. A seat can rotate between scouts over the event
+            by adding more than one range. Use this instead of team assignments, or leave
             unused if you&rsquo;re assigning by team.
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {positionAssignments?.map((row) => (
-            <div
+            <PositionSeatCard
               key={`${row.alliance}-${row.position}`}
-              className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
-            >
-              <span
-                className={cn(
-                  "font-mono text-sm font-medium",
-                  row.alliance === "red" ? "text-destructive" : "text-primary",
-                )}
-              >
-                {row.label}
-              </span>
-              <Select
-                items={scoutLabels}
-                value={row.scoutId ?? undefined}
-                onValueChange={(scoutId) =>
-                  assignPosition({
-                    eventId: activeEvent._id,
-                    alliance: row.alliance,
-                    position: row.position,
-                    scoutId: scoutId as Id<"scouts">,
-                  })
-                }
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Unassigned" />
-                </SelectTrigger>
-                <SelectContent>
-                  {scouts?.map((scout) => (
-                    <SelectItem key={scout._id} value={scout._id}>
-                      {scout.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              eventId={activeEvent._id}
+              row={row}
+              scouts={scouts ?? []}
+            />
           ))}
         </div>
       </div>
@@ -220,6 +191,120 @@ function ScoutAssignmentContent() {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+type PositionSeatRow = FunctionReturnType<typeof api.scoutPositionAssignments.listForEvent>[number]
+type ScoutDoc = FunctionReturnType<typeof api.scouts.list>[number]
+
+function PositionSeatCard({
+  eventId,
+  row,
+  scouts,
+}: {
+  eventId: Id<"events">
+  row: PositionSeatRow
+  scouts: ScoutDoc[]
+}) {
+  const addRange = useMutation(api.scoutPositionAssignments.addPositionRange)
+  const removeRange = useMutation(api.scoutPositionAssignments.removePositionRange)
+
+  const [startMatch, setStartMatch] = useState("")
+  const [endMatch, setEndMatch] = useState("")
+  const [scoutId, setScoutId] = useState<Id<"scouts"> | undefined>(undefined)
+
+  const scoutLabels = Object.fromEntries(scouts.map((s) => [s._id, s.name]))
+
+  async function handleAddRange(event: React.FormEvent) {
+    event.preventDefault()
+    const start = parseInt(startMatch, 10)
+    const end = parseInt(endMatch, 10)
+    if (!scoutId || Number.isNaN(start) || Number.isNaN(end)) return
+    try {
+      await addRange({ eventId, alliance: row.alliance, position: row.position, scoutId, startMatchNumber: start, endMatchNumber: end })
+      setStartMatch("")
+      setEndMatch("")
+      setScoutId(undefined)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't add that range")
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
+      <span
+        className={cn(
+          "font-mono text-sm font-medium",
+          row.alliance === "red" ? "text-destructive" : "text-primary",
+        )}
+      >
+        {row.label}
+      </span>
+
+      {row.ranges.length > 0 && (
+        <div className="flex flex-col gap-1">
+          {row.ranges.map((range) => (
+            <div
+              key={range._id}
+              className="flex items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1 text-xs"
+            >
+              <span className="font-mono">
+                Q{range.startMatchNumber}&ndash;{range.endMatchNumber}
+              </span>
+              <span className="flex-1 truncate px-2">{range.scoutName ?? "Unassigned"}</span>
+              <button
+                type="button"
+                aria-label="Remove range"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={() => removeRange({ assignmentId: range._id })}
+              >
+                &times;
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <form onSubmit={handleAddRange} className="flex items-center gap-1">
+        <Input
+          type="number"
+          min={1}
+          placeholder="Start"
+          value={startMatch}
+          onChange={(e) => setStartMatch(e.target.value)}
+          className="h-8 w-16 px-2 text-xs"
+        />
+        <span className="text-xs text-muted-foreground">&ndash;</span>
+        <Input
+          type="number"
+          min={1}
+          placeholder="End"
+          value={endMatch}
+          onChange={(e) => setEndMatch(e.target.value)}
+          className="h-8 w-16 px-2 text-xs"
+        />
+        <Select items={scoutLabels} value={scoutId} onValueChange={(value) => setScoutId(value as Id<"scouts">)}>
+          <SelectTrigger size="sm" className="h-8 flex-1">
+            <SelectValue placeholder="Scout" />
+          </SelectTrigger>
+          <SelectContent>
+            {scouts.map((scout) => (
+              <SelectItem key={scout._id} value={scout._id}>
+                {scout.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          type="submit"
+          size="sm"
+          className="h-8"
+          disabled={!scoutId || startMatch.trim().length === 0 || endMatch.trim().length === 0}
+        >
+          Add
+        </Button>
+      </form>
     </div>
   )
 }

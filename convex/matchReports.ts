@@ -101,7 +101,16 @@ export const dashboardForScout = query({
         .query("matches")
         .withIndex("by_event", (q) => q.eq("eventId", posAssignment.eventId))
         .collect()
-      for (const match of matches) {
+      // Position ranges are qualification-match-number ranges specifically
+      // (see scoutPositionAssignments.ts) -- playoff matches are never
+      // covered by them.
+      const rangedMatches = matches.filter(
+        (m) =>
+          m.compLevel === "qm" &&
+          m.matchNumber >= posAssignment.startMatchNumber &&
+          m.matchNumber <= posAssignment.endMatchNumber,
+      )
+      for (const match of rangedMatches) {
         const teamNumbers = posAssignment.alliance === "red" ? match.redTeamNumbers : match.blueTeamNumbers
         const teamNumber = teamNumbers[posAssignment.position - 1]
         if (teamNumber === undefined) continue
