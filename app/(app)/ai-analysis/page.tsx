@@ -89,6 +89,7 @@ function AdminControls({
     status: "running" | "paused_backoff" | "completed" | "failed"
     totalMatches: number
     processedMatches: number
+    matchesErrored?: number
   } | null
 }) {
   const syncScores = useAction(api.tbaScoreSync.syncEventScores)
@@ -159,6 +160,12 @@ function AdminControls({
               }}
             />
           </div>
+          {(job.status === "completed" || job.status === "failed") && (job.matchesErrored ?? 0) > 0 && (
+            <p className="text-xs text-warning-foreground">
+              {job.matchesErrored} match{job.matchesErrored === 1 ? "" : "es"} didn&rsquo;t get a full estimate
+              (Gemini error) -- they&rsquo;ll be retried automatically next time you click Run analysis.
+            </p>
+          )}
         </div>
       )}
     </div>

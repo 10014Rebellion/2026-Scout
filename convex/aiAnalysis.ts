@@ -345,12 +345,13 @@ export const patchJob = internalMutation({
       v.union(v.literal("running"), v.literal("paused_backoff"), v.literal("completed"), v.literal("failed")),
     ),
     processedMatchesDelta: v.optional(v.number()),
+    matchesErroredDelta: v.optional(v.number()),
     windowStartedAt: v.optional(v.number()),
     currentBackoffUntil: v.optional(v.number()),
     consecutive429s: v.optional(v.number()),
     completedAt: v.optional(v.number()),
   },
-  handler: async (ctx, { runId, processedMatchesDelta, ...rest }) => {
+  handler: async (ctx, { runId, processedMatchesDelta, matchesErroredDelta, ...rest }) => {
     const job = await ctx.db.get(runId)
     if (!job) {
       return
@@ -358,6 +359,7 @@ export const patchJob = internalMutation({
     await ctx.db.patch(runId, {
       ...rest,
       ...(processedMatchesDelta ? { processedMatches: job.processedMatches + processedMatchesDelta } : {}),
+      ...(matchesErroredDelta ? { matchesErrored: (job.matchesErrored ?? 0) + matchesErroredDelta } : {}),
     })
   },
 })
@@ -587,12 +589,18 @@ export const processNextQueueItem = internalAction({
     const match = await ctx.runQuery(internal.aiAnalysis.getMatchDoc, { matchId: nextItem.matchId })
     if (!match || !match.tbaScoreBreakdown) {
       await ctx.runMutation(internal.aiAnalysis.markQueueItem, { queueId: nextItem._id, status: "error" })
-      await ctx.runMutation(internal.aiAnalysis.patchJob, { runId, status: "running", processedMatchesDelta: 1 })
+      await ctx.runMutation(internal.aiAnalysis.patchJob, {
+        runId,
+        status: "running",
+        processedMatchesDelta: 1,
+        matchesErroredDelta: 1,
+      })
       await ctx.scheduler.runAfter(0, internal.aiAnalysis.processNextQueueItem, { runId })
       return
     }
 
     let rateLimited = false
+    let hadError = false
     for (const color of ["red", "blue"] as const) {
       try {
         await processAlliance(ctx, match, color)
@@ -601,6 +609,7 @@ export const processNextQueueItem = internalAction({
           rateLimited = true
           break
         }
+        hadError = true
         console.error(`aiAnalysis: ${color} alliance failed for match ${match.tbaMatchKey}:`, error)
       }
     }
@@ -620,11 +629,19 @@ export const processNextQueueItem = internalAction({
       return
     }
 
-    await ctx.runMutation(internal.aiAnalysis.markQueueItem, { queueId: nextItem._id, status: "done" })
+    // "error" here means at least one alliance didn't get a real estimate --
+    // the match is NOT silently counted as fully done. The next incremental
+    // run (startAnalysisRun's matchNeedsAnalysis check) will find the
+    // missing aiTeamAnalysis rows and retry this match automatically.
+    await ctx.runMutation(internal.aiAnalysis.markQueueItem, {
+      queueId: nextItem._id,
+      status: hadError ? "error" : "done",
+    })
     await ctx.runMutation(internal.aiAnalysis.patchJob, {
       runId,
       status: "running",
       processedMatchesDelta: 1,
+      matchesErroredDelta: hadError ? 1 : 0,
       consecutive429s: 0,
       windowStartedAt: Date.now(),
     })

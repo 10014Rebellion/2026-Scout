@@ -304,6 +304,12 @@ export default defineSchema({
     ),
     totalMatches: v.number(),
     processedMatches: v.number(),
+    // Matches where at least one alliance's Gemini call failed for a
+    // non-rate-limit reason (or the match had no synced score_breakdown).
+    // Counted separately from processedMatches so "completed" can't imply
+    // "every match got a real estimate" when some silently didn't -- these
+    // are exactly the matches the next incremental run will retry.
+    matchesErrored: v.optional(v.number()),
     windowStartedAt: v.number(),
     currentBackoffUntil: v.optional(v.number()),
     consecutive429s: v.number(),
