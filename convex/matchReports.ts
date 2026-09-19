@@ -1,5 +1,7 @@
 import { v } from "convex/values"
 import { mutation, query } from "./_generated/server"
+import { Doc } from "./_generated/dataModel"
+import { positionLabel } from "./scoutPositionAssignments"
 
 const slidersValidator = v.object({
   teleopScoring: v.number(),
@@ -31,22 +33,42 @@ export const getByMatchTeam = query({
   },
 })
 
-// One row per (team the scout watches) x (match that team plays in) --
-// built from scoutAssignments rather than every match in the event, since
-// a scout only ever reports on their own assigned teams.
+// One row per (team the scout watches) x (match that team plays in). Merges
+// two independent assignment styles for the same scout:
+// - team-based (scoutAssignments): a fixed team, watched across every match
+//   it plays.
+// - position-based (scoutPositionAssignments): a fixed field seat (e.g.
+//   "Red 2"), watched across every match -- but WHICH team occupies that
+//   seat is looked up fresh per match, since it changes match to match.
+// Either way the scout ends up reporting on exactly one team per match
+// they're responsible for, so this can never double-book them within a
+// single match the way two independently-chosen team assignments could.
 export const dashboardForScout = query({
   args: { scoutId: v.id("scouts") },
   handler: async (ctx, { scoutId }) => {
-    const assignments = await ctx.db
-      .query("scoutAssignments")
-      .withIndex("by_scout", (q) => q.eq("scoutId", scoutId))
-      .collect()
+    const [teamAssignments, positionAssignments] = await Promise.all([
+      ctx.db
+        .query("scoutAssignments")
+        .withIndex("by_scout", (q) => q.eq("scoutId", scoutId))
+        .collect(),
+      ctx.db
+        .query("scoutPositionAssignments")
+        .withIndex("by_scout", (q) => q.eq("scoutId", scoutId))
+        .collect(),
+    ])
 
     const teams = (
-      await Promise.all(assignments.map((assignment) => ctx.db.get(assignment.teamId)))
+      await Promise.all(teamAssignments.map((assignment) => ctx.db.get(assignment.teamId)))
     ).filter((team) => team !== null)
 
-    const items = []
+    const items: {
+      match: Doc<"matches">
+      team: Doc<"teams">
+      alliance: "red" | "blue"
+      hasReport: boolean
+      positionLabel: string | null
+    }[] = []
+
     for (const team of teams) {
       const matches = await ctx.db
         .query("matches")
@@ -69,6 +91,37 @@ export const dashboardForScout = query({
           team,
           alliance: match.redTeamNumbers.includes(team.teamNumber) ? "red" : "blue",
           hasReport: report !== null,
+          positionLabel: null,
+        })
+      }
+    }
+
+    for (const posAssignment of positionAssignments) {
+      const matches = await ctx.db
+        .query("matches")
+        .withIndex("by_event", (q) => q.eq("eventId", posAssignment.eventId))
+        .collect()
+      for (const match of matches) {
+        const teamNumbers = posAssignment.alliance === "red" ? match.redTeamNumbers : match.blueTeamNumbers
+        const teamNumber = teamNumbers[posAssignment.position - 1]
+        if (teamNumber === undefined) continue
+        const team = await ctx.db
+          .query("teams")
+          .withIndex("by_event_teamNumber", (q) =>
+            q.eq("eventId", posAssignment.eventId).eq("teamNumber", teamNumber),
+          )
+          .unique()
+        if (!team) continue
+        const report = await ctx.db
+          .query("matchReports")
+          .withIndex("by_match_team", (q) => q.eq("matchId", match._id).eq("teamId", team._id))
+          .unique()
+        items.push({
+          match,
+          team,
+          alliance: posAssignment.alliance,
+          hasReport: report !== null,
+          positionLabel: positionLabel(posAssignment.alliance, posAssignment.position),
         })
       }
     }

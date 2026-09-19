@@ -28,11 +28,20 @@ export const remove = mutation({
   args: { scoutId: v.id("scouts") },
   handler: async (ctx, { scoutId }) => {
     await requireAdmin(ctx)
-    const assignments = await ctx.db
-      .query("scoutAssignments")
-      .withIndex("by_scout", (q) => q.eq("scoutId", scoutId))
-      .collect()
+    const [assignments, positionAssignments] = await Promise.all([
+      ctx.db
+        .query("scoutAssignments")
+        .withIndex("by_scout", (q) => q.eq("scoutId", scoutId))
+        .collect(),
+      ctx.db
+        .query("scoutPositionAssignments")
+        .withIndex("by_scout", (q) => q.eq("scoutId", scoutId))
+        .collect(),
+    ])
     for (const assignment of assignments) {
+      await ctx.db.delete(assignment._id)
+    }
+    for (const assignment of positionAssignments) {
       await ctx.db.delete(assignment._id)
     }
     await ctx.db.delete(scoutId)

@@ -22,6 +22,7 @@ import type * as pickListEntries from "../pickListEntries.js";
 import type * as pickListMerges from "../pickListMerges.js";
 import type * as pitReports from "../pitReports.js";
 import type * as scoutAssignments from "../scoutAssignments.js";
+import type * as scoutPositionAssignments from "../scoutPositionAssignments.js";
 import type * as scouts from "../scouts.js";
 import type * as tbaImport from "../tbaImport.js";
 import type * as tbaPreviousEvent from "../tbaPreviousEvent.js";
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   pickListMerges: typeof pickListMerges;
   pitReports: typeof pitReports;
   scoutAssignments: typeof scoutAssignments;
+  scoutPositionAssignments: typeof scoutPositionAssignments;
   scouts: typeof scouts;
   tbaImport: typeof tbaImport;
   tbaPreviousEvent: typeof tbaPreviousEvent;

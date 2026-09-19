@@ -91,6 +91,7 @@ function MatchCard({
     team: { _id: string; teamNumber: number }
     alliance: string
     hasReport: boolean
+    positionLabel: string | null
   }
   index: number
 }) {
@@ -113,7 +114,15 @@ function MatchCard({
         <div>
           <p className="font-medium">{matchLabel(item.match.compLevel, item.match.matchNumber)}</p>
           <p className="font-mono text-sm text-muted-foreground">
-            Team {item.team.teamNumber} &middot; {item.alliance}
+            {item.positionLabel ? (
+              <>
+                {item.positionLabel} &middot; scout Team {item.team.teamNumber}
+              </>
+            ) : (
+              <>
+                Team {item.team.teamNumber} &middot; {item.alliance}
+              </>
+            )}
           </p>
         </div>
       </div>

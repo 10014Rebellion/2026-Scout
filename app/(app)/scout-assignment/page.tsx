@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "convex/react"
 import { toast } from "sonner"
 import { api } from "@/convex/_generated/api"
 import { Id } from "@/convex/_generated/dataModel"
+import { cn } from "@/lib/utils"
 import { RequireAdmin } from "@/components/require-admin"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,10 +32,15 @@ function ScoutAssignmentContent() {
     api.scoutAssignments.listForEvent,
     activeEvent ? { eventId: activeEvent._id } : "skip",
   )
+  const positionAssignments = useQuery(
+    api.scoutPositionAssignments.listForEvent,
+    activeEvent ? { eventId: activeEvent._id } : "skip",
+  )
   const addScout = useMutation(api.scouts.add)
   const removeScout = useMutation(api.scouts.remove)
   const rebalance = useMutation(api.scoutAssignments.rebalance)
   const reassignTeam = useMutation(api.scoutAssignments.reassignTeam)
+  const assignPosition = useMutation(api.scoutPositionAssignments.assignPosition)
 
   const [newScoutName, setNewScoutName] = useState("")
   const [isRebalancing, setIsRebalancing] = useState(false)
@@ -116,6 +122,58 @@ function ScoutAssignmentContent() {
           {scouts?.length === 0 && (
             <p className="text-sm text-muted-foreground">No scouts yet.</p>
           )}
+        </div>
+      </div>
+
+      <div className="panel-depth animate-stagger-in flex flex-col gap-3 rounded-lg border border-border p-4">
+        <div>
+          <h2 className="text-sm font-medium">Position assignments (classical scouting)</h2>
+          <p className="text-xs text-muted-foreground">
+            An alternative to assigning specific teams: a scout permanently owns a field
+            position (e.g. Red 2) for the whole event, and gets told which team occupies
+            that seat fresh for each match. Use this instead of team assignments, or leave
+            unused if you&rsquo;re assigning by team.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {positionAssignments?.map((row) => (
+            <div
+              key={`${row.alliance}-${row.position}`}
+              className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
+            >
+              <span
+                className={cn(
+                  "font-mono text-sm font-medium",
+                  row.alliance === "red" ? "text-destructive" : "text-primary",
+                )}
+              >
+                {row.label}
+              </span>
+              <Select
+                items={scoutLabels}
+                value={row.scoutId ?? undefined}
+                onValueChange={(scoutId) =>
+                  assignPosition({
+                    eventId: activeEvent._id,
+                    alliance: row.alliance,
+                    position: row.position,
+                    scoutId: scoutId as Id<"scouts">,
+                  })
+                }
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  {scouts?.map((scout) => (
+                    <SelectItem key={scout._id} value={scout._id}>
+                      {scout.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
         </div>
       </div>
 

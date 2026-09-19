@@ -154,6 +154,26 @@ export default defineSchema({
     .index("by_team", ["teamId"])
     .index("by_scout", ["scoutId"]),
 
+  // Classical position-based scouting: a scout permanently owns one of the
+  // 6 field positions (e.g. "Red 2") for the whole event, rather than one
+  // specific team. Which team occupies that position changes every match --
+  // the actual team to scout is looked up per match at read time (see
+  // matchReports.dashboardForScout), never stored here. This is an
+  // alternative to scoutAssignments, not a replacement: the two can be used
+  // side by side, since a team-based scout can never end up double-booked
+  // across two teams sharing a match, and neither can a position-based one
+  // (they only ever watch one seat per match, by construction).
+  scoutPositionAssignments: defineTable({
+    eventId: v.id("events"),
+    alliance: v.union(v.literal("red"), v.literal("blue")),
+    position: v.number(), // 1, 2, or 3 -- index into redTeamNumbers/blueTeamNumbers
+    scoutId: v.id("scouts"),
+    assignedAt: v.number(),
+  })
+    .index("by_event", ["eventId"])
+    .index("by_event_alliance_position", ["eventId", "alliance", "position"])
+    .index("by_scout", ["scoutId"]),
+
   pitReports: defineTable({
     teamId: v.id("teams"),
     scoutId: v.id("scouts"),
