@@ -100,6 +100,21 @@ export function TeamDetailDialog({
               </span>
               <span className="text-xs text-muted-foreground">qual record</span>
             </div>
+            {team?.ace !== undefined && (
+              <div className="flex flex-col">
+                <span className="font-mono text-base font-semibold">{team.ace.toFixed(1)}</span>
+                <span className="text-xs text-muted-foreground">
+                  ACE (Peekorobo)
+                  {team.aceAutoRaw !== undefined && (
+                    <>
+                      {" "}
+                      &middot; Auto {team.aceAutoRaw.toFixed(1)} &middot; Teleop {team.aceTeleopRaw?.toFixed(1)}{" "}
+                      &middot; Endgame {team.aceEndgameRaw?.toFixed(1)}
+                    </>
+                  )}
+                </span>
+              </div>
+            )}
           </div>
         </Section>
 

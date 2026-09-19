@@ -69,7 +69,7 @@ export function PickListCardTile({
       <p className="line-clamp-1 text-xs text-muted-foreground" title={card.nickname}>
         {card.nickname}
       </p>
-      <div className="mt-1 grid grid-cols-4 gap-1 text-center text-[0.65rem] text-muted-foreground">
+      <div className="mt-1 grid grid-cols-3 gap-1 text-center text-[0.65rem] text-muted-foreground">
         <div className="flex flex-col">
           <span className="font-mono font-medium text-foreground">
             {formatNumber(card.avgDriverRating)}
@@ -88,11 +88,19 @@ export function PickListCardTile({
           </span>
           <span>record</span>
         </div>
+      </div>
+      <div className="grid grid-cols-2 gap-1 text-center text-[0.65rem] text-muted-foreground">
+        <div className="flex flex-col" title="ACE (Peekorobo) at this event">
+          <span className="font-mono font-medium text-foreground">
+            {card.currentAce !== undefined ? card.currentAce.toFixed(1) : "—"}
+          </span>
+          <span>ACE</span>
+        </div>
         <div className="flex flex-col" title="ACE (Peekorobo) at this team's last event">
           <span className="font-mono font-medium text-foreground">
             {card.previousEventAce !== undefined ? card.previousEventAce.toFixed(1) : "—"}
           </span>
-          <span>ACE</span>
+          <span>last ACE</span>
         </div>
       </div>
     </div>

@@ -30,6 +30,7 @@ export interface PickListCard {
   avgDriverRating: number | null
   avgEstimatedScore: number | null
   record: { wins: number; losses: number; ties: number } | null
+  currentAce: number | undefined
   previousEventAce: number | undefined
 }
 

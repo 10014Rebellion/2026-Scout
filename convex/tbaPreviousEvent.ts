@@ -2,6 +2,7 @@ import { v } from "convex/values"
 import { action, internalMutation, internalQuery } from "./_generated/server"
 import { internal, api } from "./_generated/api"
 import { Id } from "./_generated/dataModel"
+import { fetchPeekoroboEventPerf } from "./peekorobo"
 
 const TBA_BASE = "https://www.thebluealliance.com/api/v3"
 
@@ -17,35 +18,6 @@ async function tbaFetch<T>(path: string): Promise<T> {
     throw new Error(`TBA request failed (${res.status}): ${path}`)
   }
   return res.json() as Promise<T>
-}
-
-const PEEKOROBO_BASE = "https://peekorobo-db-bec52087b7e6.herokuapp.com"
-
-// Verified live (2026-09-18) against a real team/event with data --
-// { team_number, event_key, raw, ace, confidence, auto_raw, teleop_raw,
-// endgame_raw }. "ace" is Peekorobo's own performance rating, distinct from
-// Statbotics' EPA -- a different number, always labeled "ACE (Peekorobo)"
-// in the UI. A 404 here just means Peekorobo has no data for this team at
-// this event (common for very new/small events) -- not an error.
-interface PeekoroboEventPerf {
-  ace: number | null
-  auto_raw: number | null
-  teleop_raw: number | null
-  endgame_raw: number | null
-}
-
-async function fetchPeekoroboAce(teamNumber: number, eventKey: string): Promise<PeekoroboEventPerf | null> {
-  const apiKey = process.env.PEEKOROBO_API_KEY
-  if (!apiKey) {
-    return null
-  }
-  const res = await fetch(`${PEEKOROBO_BASE}/event/${eventKey}/event_perfs/${teamNumber}`, {
-    headers: { "X-API-Key": apiKey },
-  })
-  if (!res.ok) {
-    return null
-  }
-  return res.json() as Promise<PeekoroboEventPerf>
 }
 
 interface TbaEventSimpleWithKey {
@@ -193,7 +165,7 @@ export const syncPreviousEventInfo = action({
         }
 
         const status: TbaTeamEventStatus | undefined = statuses[mostRecent.key]
-        const ace = await fetchPeekoroboAce(team.teamNumber, mostRecent.key)
+        const ace = await fetchPeekoroboEventPerf(team.teamNumber, mostRecent.key)
 
         return {
           teamId: team.teamId,

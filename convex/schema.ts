@@ -59,6 +59,14 @@ export default defineSchema({
     qualWins: v.optional(v.number()),
     qualLosses: v.optional(v.number()),
     qualTies: v.optional(v.number()),
+    // Peekorobo's ACE rating (see previousEvent.ace below for the "distinct
+    // from Statbotics' EPA" note) for this team AT THE CURRENT event.
+    // Populated by tbaImport's ranking sync alongside qualRank; absent when
+    // Peekorobo has no data for this team/event.
+    ace: v.optional(v.number()),
+    aceAutoRaw: v.optional(v.number()),
+    aceTeleopRaw: v.optional(v.number()),
+    aceEndgameRaw: v.optional(v.number()),
     // Set whenever syncPreviousEventInfo runs for this team, whether or not
     // it found a prior event -- lets the UI distinguish "checked TBA, there
     // genuinely isn't one" from "never synced yet" instead of guessing.

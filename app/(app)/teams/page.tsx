@@ -224,6 +224,12 @@ function TeamCard({
           <span className="font-mono font-semibold text-foreground">{currentRecord ?? "—"}</span>
           <span className="text-[0.65rem] text-muted-foreground">record</span>
         </div>
+        <div className="flex flex-col" title="ACE (Peekorobo) at this event">
+          <span className="font-mono font-semibold text-foreground">
+            {team.ace !== undefined ? team.ace.toFixed(1) : "—"}
+          </span>
+          <span className="text-[0.65rem] text-muted-foreground">ACE</span>
+        </div>
       </div>
 
       <p className="line-clamp-1 text-[0.7rem] text-muted-foreground/80">

@@ -2,6 +2,7 @@ import { v } from "convex/values"
 import { action, internalMutation, internalQuery } from "./_generated/server"
 import { internal, api } from "./_generated/api"
 import { Id } from "./_generated/dataModel"
+import { fetchPeekoroboEventPerfsBatch } from "./peekorobo"
 
 const TBA_BASE = "https://www.thebluealliance.com/api/v3"
 
@@ -202,9 +203,13 @@ export const upsertEventData = internalMutation({
   },
 })
 
-// Refreshes qualification rank/record for every team at the given event.
-// Separate from importEvent since rankings change after every match and an
-// admin may want to refresh them without re-importing teams/matches.
+// Refreshes qualification rank/record (TBA) and ACE performance rating
+// (Peekorobo) for every team at the given event -- both for THIS event, not
+// a prior one. Separate from importEvent since both change after every
+// match and an admin may want to refresh them without re-importing
+// teams/matches. The two sources are tracked independently per team (see
+// applyRankingSync) so a team missing from one doesn't erase data already
+// synced from the other.
 export const syncEventRankings = action({
   args: { eventId: v.id("events") },
   handler: async (ctx, { eventId }): Promise<{ updated: number }> => {
@@ -218,15 +223,35 @@ export const syncEventRankings = action({
       throw new Error("Event not found")
     }
 
-    const { rankings } = await tbaFetch<TbaRankingsResponse>(`/event/${event.tbaEventKey}/rankings`)
+    const [{ rankings }, aceByTeam] = await Promise.all([
+      tbaFetch<TbaRankingsResponse>(`/event/${event.tbaEventKey}/rankings`),
+      fetchPeekoroboEventPerfsBatch(event.tbaEventKey),
+    ])
 
-    const updates = (rankings ?? []).map((r) => ({
-      teamNumber: teamNumberFromKey(r.team_key),
-      qualRank: r.rank ?? undefined,
-      qualWins: r.record?.wins,
-      qualLosses: r.record?.losses,
-      qualTies: r.record?.ties,
-    }))
+    const teamNumbers = new Set<number>([
+      ...(rankings ?? []).map((r) => teamNumberFromKey(r.team_key)),
+      ...aceByTeam.keys(),
+    ])
+    const rankByTeam = new Map((rankings ?? []).map((r) => [teamNumberFromKey(r.team_key), r]))
+
+    const updates = [...teamNumbers].map((teamNumber) => {
+      const r = rankByTeam.get(teamNumber)
+      const perf = aceByTeam.get(teamNumber)
+      return {
+        teamNumber,
+        rank: r
+          ? { qualRank: r.rank ?? undefined, qualWins: r.record?.wins, qualLosses: r.record?.losses, qualTies: r.record?.ties }
+          : undefined,
+        ace: perf
+          ? {
+              ace: perf.ace ?? undefined,
+              aceAutoRaw: perf.auto_raw ?? undefined,
+              aceTeleopRaw: perf.teleop_raw ?? undefined,
+              aceEndgameRaw: perf.endgame_raw ?? undefined,
+            }
+          : undefined,
+      }
+    })
 
     return await ctx.runMutation(internal.tbaImport.applyRankingSync, {
       eventId,
@@ -248,10 +273,22 @@ export const applyRankingSync = internalMutation({
     updates: v.array(
       v.object({
         teamNumber: v.number(),
-        qualRank: v.optional(v.number()),
-        qualWins: v.optional(v.number()),
-        qualLosses: v.optional(v.number()),
-        qualTies: v.optional(v.number()),
+        rank: v.optional(
+          v.object({
+            qualRank: v.optional(v.number()),
+            qualWins: v.optional(v.number()),
+            qualLosses: v.optional(v.number()),
+            qualTies: v.optional(v.number()),
+          }),
+        ),
+        ace: v.optional(
+          v.object({
+            ace: v.optional(v.number()),
+            aceAutoRaw: v.optional(v.number()),
+            aceTeleopRaw: v.optional(v.number()),
+            aceEndgameRaw: v.optional(v.number()),
+          }),
+        ),
       }),
     ),
   },
@@ -263,13 +300,29 @@ export const applyRankingSync = internalMutation({
         .withIndex("by_event_teamNumber", (q) => q.eq("eventId", eventId).eq("teamNumber", update.teamNumber))
         .unique()
       if (!team) continue
-      await ctx.db.patch(team._id, {
-        qualRank: update.qualRank,
-        qualWins: update.qualWins,
-        qualLosses: update.qualLosses,
-        qualTies: update.qualTies,
-        qualNumTeams,
-      })
+
+      // Only touch fields we actually have fresh data for this run -- a
+      // team missing from one source (e.g. TBA hasn't ranked them yet, or
+      // Peekorobo has no ACE for this event) keeps whatever the OTHER
+      // source already gave it from an earlier sync, instead of being
+      // wiped to undefined.
+      const patch: Record<string, number | undefined> = {}
+      if (update.rank) {
+        patch.qualRank = update.rank.qualRank
+        patch.qualWins = update.rank.qualWins
+        patch.qualLosses = update.rank.qualLosses
+        patch.qualTies = update.rank.qualTies
+        patch.qualNumTeams = qualNumTeams
+      }
+      if (update.ace) {
+        patch.ace = update.ace.ace
+        patch.aceAutoRaw = update.ace.aceAutoRaw
+        patch.aceTeleopRaw = update.ace.aceTeleopRaw
+        patch.aceEndgameRaw = update.ace.aceEndgameRaw
+      }
+      if (Object.keys(patch).length === 0) continue
+
+      await ctx.db.patch(team._id, patch)
       updated++
     }
     return { updated }
