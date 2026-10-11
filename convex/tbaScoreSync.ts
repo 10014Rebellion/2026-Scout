@@ -87,7 +87,7 @@ interface TbaMatchFull {
 // best-effort replication of TBA's internal comparison, not a published
 // field -- treat it as lower-confidence than everything else this module
 // writes.
-function computeHubActiveFirst(
+export function computeHubActiveFirst(
   red: TbaAllianceBreakdown,
   blue: TbaAllianceBreakdown,
 ): "red" | "blue" | "tied" {
@@ -107,7 +107,7 @@ function computeHubActiveFirst(
 
 // RP = 3/1/0 for win/tie/loss plus +1 per achieved boolean TBA already
 // computed for us -- no need to re-derive the raw FUEL/TOWER thresholds.
-function computeRp(allianceScore: number, otherScore: number, breakdown: TbaAllianceBreakdown) {
+export function computeRp(allianceScore: number, otherScore: number, breakdown: TbaAllianceBreakdown) {
   const outcome = allianceScore > otherScore ? 3 : allianceScore === otherScore ? 1 : 0
   const bonuses = [breakdown.energizedAchieved, breakdown.superchargedAchieved, breakdown.traversalAchieved].filter(
     Boolean,
@@ -159,6 +159,15 @@ export const applyScoreSync = internalMutation({
         redRp: update.redRp,
         blueRp: update.blueRp,
         hubActiveFirst: update.hubActiveFirst,
+        // A match only ever reaches this point because the caller already
+        // confirmed it was played (TBA's actual_time / FIRST's
+        // actualStartTime) before building this update -- so this is
+        // always correct to set, and is the ONLY place that ever flips it
+        // true for an event whose import step never carries a "played"
+        // signal (FIRST API's schedule endpoint doesn't have one; TBA's
+        // own re-import does, which is why this gap stayed hidden until
+        // score-sync-without-re-import was exercised).
+        hasBeenPlayed: true,
       })
       matched += 1
     }

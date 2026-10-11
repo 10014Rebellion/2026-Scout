@@ -12,6 +12,7 @@ import type * as aiAnalysis from "../aiAnalysis.js";
 import type * as auth from "../auth.js";
 import type * as dataExport from "../dataExport.js";
 import type * as events from "../events.js";
+import type * as frcApi from "../frcApi.js";
 import type * as http from "../http.js";
 import type * as manualImport from "../manualImport.js";
 import type * as matchReports from "../matchReports.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   dataExport: typeof dataExport;
   events: typeof events;
+  frcApi: typeof frcApi;
   http: typeof http;
   manualImport: typeof manualImport;
   matchReports: typeof matchReports;

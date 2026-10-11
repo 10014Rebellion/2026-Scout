@@ -61,6 +61,11 @@ function EventSetupForm() {
                 Manual, not TBA-verified
               </span>
             )}
+            {activeEvent.source === "frcapi" && (
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                FIRST API
+              </span>
+            )}
           </p>
           <p className="font-mono text-muted-foreground">
             {activeEvent.tbaEventKey} &middot;{" "}
@@ -86,6 +91,9 @@ function EventSetupForm() {
       </form>
 
       <Separator />
+      <FrcApiPanel activeEvent={activeEvent ?? null} />
+
+      <Separator />
       <ManualImportPanel activeEvent={activeEvent ?? null} />
 
       {activeEvent && (
@@ -95,6 +103,127 @@ function EventSetupForm() {
         </>
       )}
     </div>
+  )
+}
+
+function FrcApiPanel({
+  activeEvent,
+}: {
+  activeEvent: { _id: Id<"events">; tbaEventKey: string; source?: "tba" | "frcapi" } | null
+}) {
+  const importEvent = useAction(api.frcApi.importEvent)
+  const syncScores = useAction(api.frcApi.syncEventScores)
+  const syncRankings = useAction(api.frcApi.syncEventRankings)
+
+  const [season, setSeason] = useState(String(new Date().getFullYear()))
+  const [eventCode, setEventCode] = useState("")
+  const [isImporting, setIsImporting] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
+
+  // frcapi-<season>-<CODE> -- parse the code back out so sync actions (keyed
+  // by event code, not eventId) work on reload without asking the admin to
+  // retype it.
+  const activeFrcCode =
+    activeEvent?.source === "frcapi" ? activeEvent.tbaEventKey.split("-").slice(2).join("-") : null
+  const activeFrcSeason =
+    activeEvent?.source === "frcapi" ? Number(activeEvent.tbaEventKey.split("-")[1]) : null
+
+  async function handleImport(event: React.FormEvent) {
+    event.preventDefault()
+    setIsImporting(true)
+    try {
+      const result = await importEvent({ season: Number(season), eventCode: eventCode.trim() })
+      toast.success(`Imported ${result.teamCount} teams and ${result.matchCount} qualification matches`)
+      setEventCode("")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Import failed")
+    } finally {
+      setIsImporting(false)
+    }
+  }
+
+  async function handleSyncScores() {
+    if (!activeFrcCode || !activeFrcSeason) return
+    setIsSyncing(true)
+    try {
+      const result = await syncScores({ season: activeFrcSeason, eventCode: activeFrcCode })
+      toast.success(`Synced scores for ${result.matchesSynced} played match(es)`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Score sync failed")
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
+  async function handleSyncRankings() {
+    if (!activeFrcCode || !activeFrcSeason) return
+    setIsSyncing(true)
+    try {
+      const result = await syncRankings({
+        eventId: activeEvent!._id,
+        season: activeFrcSeason,
+        eventCode: activeFrcCode,
+      })
+      toast.success(`Updated rankings for ${result.updated} team(s)`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Ranking sync failed")
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
+  return (
+    <details className="animate-stagger-in flex flex-col gap-4 rounded-lg border border-border p-4">
+      <summary className="cursor-pointer text-sm font-semibold">
+        Import from FIRST API (TBA alternative)
+      </summary>
+      <p className="-mt-2 text-xs text-muted-foreground">
+        Uses the official FIRST FRC Events API instead of TBA. This API is noticeably
+        slower (can take a few minutes per request) &mdash; expect the buttons below to
+        sit on &ldquo;Importing&hellip;&rdquo;/&ldquo;Syncing&hellip;&rdquo; for a
+        while, that&rsquo;s normal.
+      </p>
+
+      <form onSubmit={handleImport} className="flex flex-wrap items-end gap-2">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="frcSeason">Season</Label>
+          <Input
+            id="frcSeason"
+            className="w-24"
+            value={season}
+            onChange={(e) => setSeason(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-1 flex-col gap-1.5">
+          <Label htmlFor="frcEventCode">Event code</Label>
+          <Input
+            id="frcEventCode"
+            placeholder="e.g. ALHU"
+            value={eventCode}
+            onChange={(e) => setEventCode(e.target.value)}
+          />
+        </div>
+        <Button type="submit" disabled={isImporting || eventCode.trim().length === 0}>
+          {isImporting ? "Importing..." : "Import event"}
+        </Button>
+      </form>
+
+      {activeFrcCode && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-muted-foreground">
+            Active event is FIRST-API-sourced ({activeFrcCode}, {activeFrcSeason}).
+          </p>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={handleSyncScores} disabled={isSyncing}>
+              {isSyncing ? "Syncing..." : "Sync FIRST API scores"}
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={handleSyncRankings} disabled={isSyncing}>
+              {isSyncing ? "Syncing..." : "Sync FIRST API rankings"}
+            </Button>
+          </div>
+        </div>
+      )}
+    </details>
   )
 }
 

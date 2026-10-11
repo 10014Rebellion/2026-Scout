@@ -46,6 +46,12 @@ export default defineSchema({
     // manualImport.reconcileWithTba patches it (and clears this flag) once
     // TBA is back.
     isManual: v.optional(v.boolean()),
+    // Which external API this event's data came from. Absent/undefined
+    // means TBA (the original, default importer, predates this field).
+    // "frcapi" events use a synthesized "frcapi-<season>-<CODE>" tbaEventKey
+    // (FIRST's event codes aren't year-prefixed or TBA-key-shaped), so they
+    // never collide with a real TBA key -- see convex/frcApi.ts.
+    source: v.optional(v.union(v.literal("tba"), v.literal("frcapi"))),
   }).index("by_tbaEventKey", ["tbaEventKey"]),
 
   teams: defineTable({
