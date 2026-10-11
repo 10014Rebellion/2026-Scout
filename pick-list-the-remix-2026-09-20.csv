@@ -1,0 +1,38 @@
+Rank,TeamNumber,SuggestedTier,CompositeScore,MatchReports,AvgAuto,AvgTeleop,AvgDriver,AvgReliability,AvgStrategy,AvgDefense,AvgScoutConfidence,PitSummary,Rationale
+1,2881,Tier1,3.8,6,3,4,3.5,4.5,4,2.3,4,Swerve-ish; notes: big/beaching,"Consistently top-rated: ""excellent pick,"" ""near 100% accuracy,"" fast single shooter, currently ranked 1st. Weakness: beaching (getting stuck) noted twice."
+2,4639,Tier1,3.64,5,3.4,3.6,4,3.6,3.6,2.6,3.8,,"Strong all-around scorer, accurate, but one note of a possible broken intake bar late in a match."
+3,1477,Tier1,3.56,5,3,3.4,4,4,3.4,3.2,2.8,,Good driving and shooting; scouts flagged inconsistent confidence/coordination early and late in matches as the main risk.
+4,7492,Tier1,3.43,6,3.17,3.17,3.5,4.33,3,1.67,3.67,,"Excellent strategy and reliability, good shooter; consistently noted as weak on defense only."
+5,8576,Tier1,3.28,5,2.6,3.6,3.2,3.8,3.2,2.4,4,"Swerve, claimed scoring 4/5, claimed defense 4/5","Fast, accurate driving and efficient shooting per scouts; explicitly noted as unwilling to play defense."
+6,624,Tier1,3.25,4,3,3.25,3,3.75,3.25,1.25,4, ,"Solid, steady performer -- ""could be a good pick"" -- but shooting speed/efficiency called out as needing improvement."
+7,5414,Tier1,3.2,5,2,3.4,4.2,3.2,3.2,1.6,4.4,"Swerve, turret, claimed scoring 4/5, fuel cap 60","Good pick with a few hiccups; one match had a breakdown, weakest area is defense/auton consistency."
+,9998,Tier2,3.12,5,1.4,2.8,4,3.8,3.6,3,5,No pit note beyond '.',"Only 2 notes but both positive (""we actually did so good""); strong driver/reliability numbers, weaker raw scoring."
+9,324,Tier2,3.08,5,2.6,2.8,3.6,3,3.4,3.2,3.8, ,"""One of the best bots scouted"" when healthy, but intake reliability (jamming after auto) is a recurring concern."
+10,457,Tier2,2.96,5,2.2,3.2,3.2,3.4,2.8,1.6,4.4,"Swerve, claimed scoring 4/5, driver exp 1","Good, consistent scoring bot; easy to defend against per scouts, and should attempt more defense of its own."
+11,3735,Tier2,2.84,5,2.2,2.6,3,3.6,2.8,1.6,3.6, ,Solid overall pick; shooting called out as slow/inefficient relative to the rest of its game.
+12,5892,Tier2,2.8,7,1.29,2.86,3.71,3.14,3,2.29,3.71, ,"Fast intake and driving with a notably slow single shooter; improved as matches went on, one long beaching incident."
+13,4295,Tier2,2.8,5,1.6,2.6,3,3.8,3,2.2,4, ,"Decent reliability and driving; got stuck on/near game pieces repeatedly, offense is its weaker suit."
+14,7691,Tier2,2.76,5,2,3,3,3.2,2.6,1.8,4.6,"Swerve, claimed scoring 4/5, fuel cap 80","Accurate single-shooter, low capacity and an inexperienced-looking driver; scouts called it a solid 2nd-pick candidate."
+15,6243,Tier2,2.73,6,1.33,1.33,3.83,3.83,3.33,3.33,4.5, ,"Dedicated defense specialist -- pushes opponents effectively -- but has no intake/outtake, essentially zero offense."
+16,7312,Tier2,2.6,5,1.4,2.6,3,3.2,2.8,1.6,4,Notes: 'AMAZING',"""Everything solid except auton""; mostly feeds rather than scores directly, single shooter."
+17,9512,Tier2,2.6,5,2.4,2.8,2.8,2.8,2.2,1.4,3.2, ,"Inconsistent match to match -- one note of the bot simply not working, another calling it merely 'not efficient.'"
+18,2587,Tier3,2.57,6,2,2.67,2.67,3.17,2.33,1,4, ,Below-average scoring and auto; decent at feeding teammates fuel per scouts.
+19,5427,Tier3,2.53,6,2.17,2.33,2.5,3.67,2,1.67,2.83, ,"Good intake/shooting one match, a no-show noted another -- inconsistent attendance/performance."
+20,9994,Tier3,2.5,6,2,2.33,2.67,2.5,3,1.83,3.5, ,"Below-average bot that scouts say ""needs good teammates to do well""; got stuck on game pieces at least once."
+21,8177,Tier3,2.47,6,1.33,2.83,2.5,3.17,2.5,1.67,3, ,"Ok 3rd-pick-tier bot; one match affected by an auto malfunction and a loose side plate, not fully the robot's fault."
+22,231,Tier3,2.44,5,1.6,2.6,2.2,3.4,2.4,1.8,4.8, ,"Shaky/crashing driving, minimal intake per scouts; good at feeding fuel when it can't score directly."
+23,118,Tier3,2.28,5,1.2,1.4,3.2,3,2.6,3.2,4.8,Notes: 'not working RN',Decent driver/defense but very low scoring output; pit crew reported the robot not working at time of inspection.
+24,9991,Tier3,2.25,4,1.25,2,1.75,1.5,1.75,1.25,3.25, ,"Breaks down often per scouts (""has potential"" but unreliable); one un-scouted match (no-show)."
+25,4328,Tier3,2.2,3,1.67,1.67,2.33,2.33,3,1.67,5, ,"Very limited scoring -- intake is only 1 fuel wide per scouts, can barely shoot."
+26,9977,Tier3,2.16,5,1.4,2,2.4,3.2,1.8,1.6,3.8, ,Consistently weak scoring; one match the robot was disabled entirely.
+27,5829,Tier3,2.15,4,1.75,2,2.5,2.25,2.25,2.75,4.25,"Swerve, claimed scoring 4/5, fuel cap 40","Claims don't match observed play -- scouts saw no auto, a swaying intake, and slow/easily-defended movement."
+28,4587,Tier3,2,6,1.33,1.33,2.67,2.17,2.5,3,2.83, ,"Mixed reviews (""ok defense"" to ""nothing special""); one full no-show match."
+29,9999,Tier3,1.7,4,2,1.75,1.75,1.5,1.5,1.5,2.75,"Tank drive, claimed scoring 2/5, fuel cap 20","Barely moved in a 213-13 blowout loss noted by scouts; slow and inefficient across the board, low pit claims too."
+30,9981,Tier3,1.68,4,1.25,2,1.75,1.5,1.75,1.25,3.25, ,"Weak but not broken -- ""ok shooting and efficiency"" is the most positive note it received; one no-show."
+31,9181,Tier3,1.65,4,1.25,2,1.75,1.5,1.75,1.25,3.25, ,"Duplicate-looking weak profile to 9981 in the raw numbers; below average across every metric, no reliability red flag."
+32,9137,Tier3,1.64,5,1.2,1.4,1.8,2,1.8,1.4,3.4,"Swerve, claimed scoring 2/5","Lost a match 200-13; scouts say it ""can't shoot, slow intake,"" possibly usable only as a human-player feeder."
+33,7115,DoNotPick,1.77,6,1.33,1.67,2,1.67,2.17,1.67,2.83, ,"Repeated real failures across matches: ""BOT DIDN'T WORK,"" ""non-functioning shooter and no auton,"" ""don't show up."""
+34,8769,DoNotPick,2.54,7,1.71,2.43,2.71,3.29,2.57,2.71,3.86,"Notes: 'looking kinda cooked, fixing something'",Already flagged Do Not Pick in your pick list -- pit crew and scouts both reported it broken down most of the event.
+35,9992,DoNotPick,1.8,7,1.14,1.57,2,2.29,2,1.71,3.43,"Swerve, claimed scoring 1/5 (lowest in event)","Described as a kitbot that ""did not move at all""; robot did not work in multiple matches."
+36,9995,DoNotPick,1.52,5,1.6,1.4,1.4,1.4,1.4,1.4,3.8, ,Lowest composite in the event; scouts repeatedly reported no robot on the field or the robot not moving at all.
+-,10014,YourTeam,1.85,4,1.5,1.75,1.5,2,1.5,1.75,3.5,Notes: '.',Your own team (Rebellion) -- not a pick target. Included for reference only; your own scouts noted 'some issues and lack of effort cost this comp.'

@@ -99,6 +99,53 @@ export const markSource = internalMutation({
   },
 })
 
+// Shared by importEvent and reconcileWithFrcApi -- both need the same
+// "fetch event/teams/schedule and map into upsertEventData's shape" work,
+// just handing the result to a different mutation afterward.
+async function fetchAndMapEvent(season: number, code: string) {
+  const [eventsResp, teamsResp, scheduleResp] = await Promise.all([
+    frcFetch<FrcEventsResponse>(`/${season}/events?eventCode=${code}`),
+    frcFetch<FrcTeamsResponse>(`/${season}/teams?eventCode=${code}`),
+    frcFetch<FrcScheduleResponse>(`/${season}/schedule/${code}/qual`),
+  ])
+
+  const eventInfo = eventsResp.Events[0]
+  if (!eventInfo) {
+    throw new Error(`FIRST API has no event with code "${code}" for ${season}`)
+  }
+
+  return {
+    event: {
+      tbaEventKey: `frcapi-${season}-${code}`,
+      name: eventInfo.name,
+      startDate: eventInfo.dateStart.slice(0, 10),
+      endDate: eventInfo.dateEnd.slice(0, 10),
+    },
+    teams: teamsResp.teams.map((t) => ({
+      tbaTeamKey: `frc${t.teamNumber}`,
+      teamNumber: t.teamNumber,
+      nickname: t.nameShort,
+      city: t.city ?? undefined,
+      stateProv: t.stateProv ?? undefined,
+      country: t.country ?? undefined,
+    })),
+    matches: scheduleResp.Schedule.map((m) => ({
+      tbaMatchKey: `frcapi-${code}-qm${m.matchNumber}`,
+      compLevel: "qm",
+      matchNumber: m.matchNumber,
+      setNumber: 1,
+      redTeamNumbers: (["Red1", "Red2", "Red3"] as const)
+        .map((s) => stationTeamNumber(m.teams, s))
+        .filter((n): n is number => n !== undefined),
+      blueTeamNumbers: (["Blue1", "Blue2", "Blue3"] as const)
+        .map((s) => stationTeamNumber(m.teams, s))
+        .filter((n): n is number => n !== undefined),
+      scheduledTime: m.startTime ? Date.parse(m.startTime) : undefined,
+      hasBeenPlayed: false,
+    })),
+  }
+}
+
 // Imports event info, teams, and the qualification schedule from the FIRST
 // API -- the FRC-API equivalent of tbaImport.importEvent. Playoff matches
 // aren't included: FIRST's schedule endpoint only publishes the qual
@@ -114,52 +161,36 @@ export const importEvent = action({
     }
 
     const code = eventCode.trim().toUpperCase()
+    const mapped = await fetchAndMapEvent(season, code)
 
-    const [eventsResp, teamsResp, scheduleResp] = await Promise.all([
-      frcFetch<FrcEventsResponse>(`/${season}/events?eventCode=${code}`),
-      frcFetch<FrcTeamsResponse>(`/${season}/teams?eventCode=${code}`),
-      frcFetch<FrcScheduleResponse>(`/${season}/schedule/${code}/qual`),
-    ])
-
-    const eventInfo = eventsResp.Events[0]
-    if (!eventInfo) {
-      throw new Error(`FIRST API has no event with code "${code}" for ${season}`)
-    }
-
-    const eventId: Id<"events"> = await ctx.runMutation(internal.tbaImport.upsertEventData, {
-      event: {
-        tbaEventKey: `frcapi-${season}-${code}`,
-        name: eventInfo.name,
-        startDate: eventInfo.dateStart.slice(0, 10),
-        endDate: eventInfo.dateEnd.slice(0, 10),
-      },
-      teams: teamsResp.teams.map((t) => ({
-        tbaTeamKey: `frc${t.teamNumber}`,
-        teamNumber: t.teamNumber,
-        nickname: t.nameShort,
-        city: t.city ?? undefined,
-        stateProv: t.stateProv ?? undefined,
-        country: t.country ?? undefined,
-      })),
-      matches: scheduleResp.Schedule.map((m) => ({
-        tbaMatchKey: `frcapi-${code}-qm${m.matchNumber}`,
-        compLevel: "qm",
-        matchNumber: m.matchNumber,
-        setNumber: 1,
-        redTeamNumbers: (["Red1", "Red2", "Red3"] as const)
-          .map((s) => stationTeamNumber(m.teams, s))
-          .filter((n): n is number => n !== undefined),
-        blueTeamNumbers: (["Blue1", "Blue2", "Blue3"] as const)
-          .map((s) => stationTeamNumber(m.teams, s))
-          .filter((n): n is number => n !== undefined),
-        scheduledTime: m.startTime ? Date.parse(m.startTime) : undefined,
-        hasBeenPlayed: false,
-      })),
-    })
-
+    const eventId: Id<"events"> = await ctx.runMutation(internal.tbaImport.upsertEventData, mapped)
     await ctx.runMutation(internal.frcApi.markSource, { eventId, source: "frcapi" })
 
-    return { eventId, teamCount: teamsResp.teams.length, matchCount: scheduleResp.Schedule.length }
+    return { eventId, teamCount: mapped.teams.length, matchCount: mapped.matches.length }
+  },
+})
+
+// Upgrades a manually-entered event in place using the FIRST API instead of
+// TBA -- the FRC-API equivalent of manualImport.reconcileWithTba. Reuses
+// that same applyReconciliation mutation (its shape is source-agnostic:
+// upsert by team number / by comp level+match number+set number, never a
+// second event row), since the only thing that actually differs between
+// the TBA and FIRST-API paths is where the data came from.
+export const reconcileWithFrcApi = action({
+  args: { eventId: v.id("events"), season: v.number(), eventCode: v.string() },
+  handler: async (ctx, { eventId, season, eventCode }): Promise<{ teamCount: number; matchCount: number }> => {
+    const role = await ctx.runQuery(api.auth.currentRole, {})
+    if (role !== "admin") {
+      throw new Error("Admin access required")
+    }
+
+    const code = eventCode.trim().toUpperCase()
+    const mapped = await fetchAndMapEvent(season, code)
+
+    await ctx.runMutation(internal.manualImport.applyReconciliation, { eventId, ...mapped })
+    await ctx.runMutation(internal.frcApi.markSource, { eventId, source: "frcapi" })
+
+    return { teamCount: mapped.teams.length, matchCount: mapped.matches.length }
   },
 })
 

@@ -459,6 +459,54 @@ function ReconcilePanel({ eventId }: { eventId: Id<"events"> }) {
           {isReconciling ? "Reconciling..." : "Reconcile"}
         </Button>
       </div>
+
+      <ReconcileWithFrcApiPanel eventId={eventId} />
+    </div>
+  )
+}
+
+function ReconcileWithFrcApiPanel({ eventId }: { eventId: Id<"events"> }) {
+  const reconcile = useAction(api.frcApi.reconcileWithFrcApi)
+  const [season, setSeason] = useState(String(new Date().getFullYear()))
+  const [eventCode, setEventCode] = useState("")
+  const [isReconciling, setIsReconciling] = useState(false)
+
+  async function handleReconcile() {
+    setIsReconciling(true)
+    try {
+      const result = await reconcile({ eventId, season: Number(season), eventCode: eventCode.trim() })
+      toast.success(
+        `Reconciled with FIRST API: ${result.teamCount} teams, ${result.matchCount} matches. Existing scouting data was preserved.`,
+      )
+      setEventCode("")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Reconciliation failed")
+    } finally {
+      setIsReconciling(false)
+    }
+  }
+
+  return (
+    <div className="mt-1 flex flex-col gap-2 border-t border-border pt-3">
+      <p className="text-xs text-muted-foreground">
+        Or reconcile with the official FIRST API instead (can take a few minutes):
+      </p>
+      <div className="flex gap-2">
+        <Input className="w-20" value={season} onChange={(e) => setSeason(e.target.value)} />
+        <Input
+          placeholder="Event code, e.g. TXMCK1"
+          value={eventCode}
+          onChange={(e) => setEventCode(e.target.value)}
+        />
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={handleReconcile}
+          disabled={isReconciling || eventCode.trim().length === 0}
+        >
+          {isReconciling ? "Reconciling..." : "Reconcile"}
+        </Button>
+      </div>
     </div>
   )
 }
